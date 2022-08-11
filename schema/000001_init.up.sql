@@ -16,7 +16,6 @@ CREATE TABLE questions
     id serial not null unique,
     body text NOT NULL,
     test_id bigint NOT NULL unique,
-    author_id bigint NOT NULL unique,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
 );
@@ -26,7 +25,6 @@ CREATE TABLE answers
     id serial not null unique,
     title varchar(255) NOT NULL,
     correct boolean NOT NULL DEFAULT false,
-    author_id bigint NOT NULL unique,
     question_id bigint NOT NULL unique,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
@@ -60,7 +58,3 @@ ALTER TABLE tests ADD CONSTRAINT test_passages_tests FOREIGN KEY (id) REFERENCES
 ALTER TABLE users ADD CONSTRAINT test_passages_users FOREIGN KEY (id) REFERENCES test_passages (user_id);
 
 ALTER TABLE users ADD CONSTRAINT tests_users FOREIGN KEY (id) REFERENCES tests (author_id);
-
-ALTER TABLE users ADD CONSTRAINT questions_users FOREIGN KEY (id) REFERENCES questions (author_id);
-
-ALTER TABLE users ADD CONSTRAINT answers_users FOREIGN KEY (id) REFERENCES answers (author_id);
