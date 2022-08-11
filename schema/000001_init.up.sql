@@ -37,8 +37,6 @@ CREATE TABLE test_passages
     id serial not null unique,
     user_id bigint NOT NULL unique,
     test_id bigint NOT NULL unique,
-    question_ids bigint[] NOT NULL,
-    passed_question_ids bigint[] NOT NULL,
     passed boolean NOT NULL DEFAULT false,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
