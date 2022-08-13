@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/popeskul/qna-go/internal/config"
@@ -19,6 +20,7 @@ import (
 )
 
 var dbConn *sql.DB
+var repo *repository.Repository
 
 func TestMain(m *testing.M) {
 	err := changeDirToRoot()
@@ -36,7 +38,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
-	defer db.Close()
+	defer dbConn.Close()
+
+	repo = repository.NewRepository(dbConn)
 
 	os.Exit(m.Run())
 }
@@ -45,8 +49,6 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 	mockEmail := "TestServiceAuth_CreateUser@example.com"
 	mockUniqueEmail := "test_unique_email@mail.com"
 	mockPassword := "12345"
-
-	repo := repository.NewRepository(dbConn)
 
 	// Create seed user for testing duplicate email
 	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
@@ -106,13 +108,14 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 			s := NewServiceAuth(tt.fields.repo)
 			_, err := s.CreateUser(tt.args.input)
 			if err != nil {
+				fmt.Println("err: ", err, "want: ", tt.err)
 				if strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
 				}
 			}
 
 			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.input.Email)
+				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2, $3)", tt.args.input.Email, mockUniqueEmail, mockEmail)
 				if err != nil {
 					t.Error(err)
 				}
@@ -125,7 +128,6 @@ func TestServiceAuth_GetUser(t *testing.T) {
 	mockEmail := "TestServiceAuth_GetUser@test.com"
 	mockPassword := "12345"
 
-	repo := repository.NewRepository(dbConn)
 	_, err := repo.CreateUser(domain.SignUpInput{
 		Email:             mockEmail,
 		EncryptedPassword: mockPassword,
@@ -186,7 +188,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.email)
+				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2)", tt.args.email, mockEmail)
 				if err != nil {
 					t.Error(err)
 				}
@@ -201,7 +203,6 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 		EncryptedPassword: "123456",
 	}
 
-	repo := repository.NewRepository(dbConn)
 	service := NewServiceAuth(repo)
 
 	_, _ = service.CreateUser(domain.SignUpInput{
