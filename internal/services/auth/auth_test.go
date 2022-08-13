@@ -23,8 +23,7 @@ var dbConn *sql.DB
 var repo *repository.Repository
 
 func TestMain(m *testing.M) {
-	err := changeDirToRoot()
-	if err != nil {
+	if err := changeDirToRoot(); err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
 
@@ -287,9 +286,8 @@ func newDBConnection(cfg *config.Config) (*sql.DB, error) {
 }
 
 func loadConfig() (*config.Config, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
+	if err := godotenv.Load(".env"); err != nil {
+		return nil, err
 	}
 
 	cfg, err := config.New("configs", "config")
