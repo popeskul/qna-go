@@ -17,19 +17,39 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TestRepositoryAuth_CreateUser(t *testing.T) {
-	db, err := newDBConnection()
-	if err != nil {
-		t.Error(err)
+var dbConn *sql.DB
+
+func TestMain(m *testing.M) {
+	if err := changeDirToRoot(); err != nil {
+		log.Fatal(err)
 	}
-	repo := NewRepoAuth(db)
+
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := newDBConnection(cfg)
+	dbConn = db
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+	os.Exit(m.Run())
+}
+
+func TestRepositoryAuth_CreateUser(t *testing.T) {
+	repo := NewRepoAuth(dbConn)
 
 	mockSimpleEmail := "testting1@test.com"
 	mockUniqueEmail := "test_unique_email@mail.com"
 	mockPassword := "12345"
 
 	// Create user with simple email
-	_, err = repo.GetUser(mockUniqueEmail, mockPassword)
+	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
 		// create single user for testing duplicate email
 		_, err = repo.CreateUser(domain.SignUpInput{
@@ -93,7 +113,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 
 			// Cleanup
 			cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
-			if _, err = db.Exec(cleanupQuery, tt.args.u.Email); err != nil {
+			if _, err = dbConn.Exec(cleanupQuery, tt.args.u.Email); err != nil {
 				t.Error(err)
 			}
 		})
@@ -101,11 +121,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 }
 
 func TestRepositoryAuth_GetUser(t *testing.T) {
-	db, err := newDBConnection()
-	if err != nil {
-		t.Error(err)
-	}
-	repo := NewRepoAuth(db)
+	repo := NewRepoAuth(dbConn)
 
 	mockEmail := "testting2@test.com"
 	mockPassword := "12345"
@@ -157,20 +173,26 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 
 			// Cleanup
 			cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
-			if _, err = db.Exec(cleanupQuery, tt.args.email); err != nil {
+			if _, err = dbConn.Exec(cleanupQuery, tt.args.email); err != nil {
 				t.Error(err)
 			}
 		})
 	}
 }
 
-func newDBConnection() (*sql.DB, error) {
-	err := changeDirToRoot()
-	if err != nil {
-		return nil, err
-	}
+func newDBConnection(cfg *config.Config) (*sql.DB, error) {
+	return postgres.NewPostgresConnection(db.ConfigDB{
+		Host:     cfg.DB.Host,
+		Port:     cfg.DB.Port,
+		User:     cfg.DB.User,
+		Password: cfg.DB.Password,
+		DBName:   cfg.DB.DBName,
+		SSLMode:  cfg.DB.SSLMode,
+	})
+}
 
-	err = godotenv.Load(".env")
+func loadConfig() (*config.Config, error) {
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
@@ -181,14 +203,7 @@ func newDBConnection() (*sql.DB, error) {
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
-	return postgres.NewPostgresConnection(db.ConfigDB{
-		Host:     cfg.DB.Host,
-		Port:     cfg.DB.Port,
-		User:     cfg.DB.User,
-		Password: cfg.DB.Password,
-		DBName:   cfg.DB.DBName,
-		SSLMode:  cfg.DB.SSLMode,
-	})
+	return cfg, nil
 }
 
 func changeDirToRoot() error {
