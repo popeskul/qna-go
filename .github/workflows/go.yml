@@ -1,17 +1,41 @@
-name: qna-server
+name: qna
 
 on:
   push:
-    branches: [ main ]
+    branches: [ auth ]
   pull_request:
-    branches: [ main ]
+    branches: [ auth ]
 
 jobs:
 
   build:
     name: Build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: ${{secrets.DB_NAME}}
+          POSTGRES_PORT: ${{secrets.DB_PORT}}
+          POSTGRES_USER: ${{secrets.DB_USER}}
+          POSTGRES_PASSWORD: ${{secrets.DB_PASSWORD}}
+        ports:
+          - 5432:5432
+        options:
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update && sudo apt-get upgrade -y
+          sudo apt-get install --yes postgresql-client
+
+      - name: Setup database
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE "qna_db";'
+        env:
+          PGPASSWORD: ${{secrets.DB_PASSWORD}}
 
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -29,10 +53,21 @@ jobs:
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
               dep ensure
           fi
+
       - name: Create .env
         run: touch .env
 
+      - name: migrate database
+        run: |
+          curl -s https://packagecloud.io/install/repositories/golang-migrate/migrate/script.deb.sh | sudo bash
+          sudo apt-get update
+          sudo apt-get install migrate
+
+      - name: migrate database up
+        run: |
+          make migrate-up db_password=${{secrets.DB_PASSWORD}} db_host=${{secrets.DB_HOST}} db_port=${{secrets.DB_PORT}} db_user=${{secrets.DB_USER}} db_name=${{secrets.DB_NAME}}
+
       - name: Test
         env:
-          FOREM_API_KEY: ${{ secrets.DB_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: go test -v ./...
