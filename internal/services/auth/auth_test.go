@@ -111,11 +111,12 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 				}
 			}
 
-			// cleanup
-			_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.input.Email)
-			if err != nil {
-				t.Error(err)
-			}
+			t.Cleanup(func() {
+				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.input.Email)
+				if err != nil {
+					t.Error(err)
+				}
+			})
 		})
 	}
 }
@@ -184,11 +185,12 @@ func TestServiceAuth_GetUser(t *testing.T) {
 				}
 			}
 
-			// cleanup
-			_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.email)
-			if err != nil {
-				t.Error(err)
-			}
+			t.Cleanup(func() {
+				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.email)
+				if err != nil {
+					t.Error(err)
+				}
+			})
 		})
 	}
 }
@@ -255,7 +257,6 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 				}
 			}
 
-			// cleanup
 			t.Cleanup(func() {
 				_, err := dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
 				if err != nil {
