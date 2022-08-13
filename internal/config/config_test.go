@@ -1,8 +1,21 @@
 package config
 
 import (
+	"log"
+	"os"
+	"path"
+	"runtime"
 	"testing"
 )
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := path.Join(path.Dir(filename), "./../../")
+	err := os.Chdir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -18,8 +31,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "ok",
 			args: args{
-				folder:   ".",
-				filename: "config_test",
+				folder:   "configs",
+				filename: "config",
 			},
 			want: &Config{
 				DB: Postgres{
