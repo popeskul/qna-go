@@ -18,6 +18,7 @@ import (
 )
 
 var dbConn *sql.DB
+var repo *RepositoryAuth
 
 func TestMain(m *testing.M) {
 	if err := changeDirToRoot(); err != nil {
@@ -35,15 +36,12 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	if err := godotenv.Load(); err != nil {
-		log.Fatal(err)
-	}
+	repo = NewRepoAuth(dbConn)
+
 	os.Exit(m.Run())
 }
 
 func TestRepositoryAuth_CreateUser(t *testing.T) {
-	repo := NewRepoAuth(dbConn)
-
 	mockSimpleEmail := "testting1@test.com"
 	mockUniqueEmail := "test_unique_email@mail.com"
 	mockPassword := "12345"
@@ -51,7 +49,6 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 	// Create user with simple email
 	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
-		// create single user for testing duplicate email
 		_, err = repo.CreateUser(domain.SignUpInput{
 			Email:             mockUniqueEmail,
 			EncryptedPassword: mockPassword,
@@ -111,18 +108,14 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 				return
 			}
 
-			// Cleanup
-			cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
-			if _, err = dbConn.Exec(cleanupQuery, tt.args.u.Email); err != nil {
-				t.Error(err)
-			}
+			t.Cleanup(func() {
+				helperDeleteUserByEmail(t, tt.args.u.Email)
+			})
 		})
 	}
 }
 
 func TestRepositoryAuth_GetUser(t *testing.T) {
-	repo := NewRepoAuth(dbConn)
-
 	mockEmail := "testting2@test.com"
 	mockPassword := "12345"
 	userId, err := repo.CreateUser(domain.SignUpInput{
@@ -171,12 +164,18 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 				t.Errorf("RepositoryAuth.GetUser() = %v, want %v", got.ID, tt.want)
 			}
 
-			// Cleanup
-			cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
-			if _, err = dbConn.Exec(cleanupQuery, tt.args.email); err != nil {
-				t.Error(err)
-			}
+			t.Cleanup(func() {
+				helperDeleteUserByEmail(t, tt.args.email)
+			})
 		})
+	}
+}
+
+func helperDeleteUserByEmail(t *testing.T, email string) {
+	t.Helper()
+	cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
+	if _, err := dbConn.Exec(cleanupQuery, email); err != nil {
+		t.Error(err)
 	}
 }
 
