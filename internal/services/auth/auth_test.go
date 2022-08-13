@@ -3,7 +3,6 @@ package auth
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/popeskul/qna-go/internal/config"
@@ -19,8 +18,13 @@ import (
 	"testing"
 )
 
-var dbConn *sql.DB
-var repo *repository.Repository
+var (
+	dbConn          *sql.DB
+	repo            *repository.Repository
+	mockEmail       = "TestServiceAuth_CreateUser@example.com"
+	mockUniqueEmail = "test_unique_email@mail.com"
+	mockPassword    = "12345"
+)
 
 func TestMain(m *testing.M) {
 	if err := changeDirToRoot(); err != nil {
@@ -45,10 +49,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestServiceAuth_CreateUser(t *testing.T) {
-	mockEmail := "TestServiceAuth_CreateUser@example.com"
-	mockUniqueEmail := "test_unique_email@mail.com"
-	mockPassword := "12345"
-
 	// Create seed user for testing duplicate email
 	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
@@ -105,9 +105,8 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewServiceAuth(tt.fields.repo)
-			_, err := s.CreateUser(tt.args.input)
+			_, err = s.CreateUser(tt.args.input)
 			if err != nil {
-				fmt.Println("err: ", err, "want: ", tt.err)
 				if strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
 				}
@@ -124,9 +123,6 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 }
 
 func TestServiceAuth_GetUser(t *testing.T) {
-	mockEmail := "TestServiceAuth_GetUser@test.com"
-	mockPassword := "12345"
-
 	_, err := repo.CreateUser(domain.SignUpInput{
 		Email:             mockEmail,
 		EncryptedPassword: mockPassword,
@@ -169,7 +165,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 			},
 			args: args{
 				email:    "bad@mail.com",
-				password: "123123123",
+				password: mockPassword,
 			},
 			want: nil,
 		},
@@ -198,8 +194,8 @@ func TestServiceAuth_GetUser(t *testing.T) {
 
 func TestServiceAuth_GenerateToken(t *testing.T) {
 	mockUser := domain.User{
-		Email:             "TestServiceAuth_GenerateToken@mail.com",
-		EncryptedPassword: "123456",
+		Email:             mockEmail,
+		EncryptedPassword: mockPassword,
 	}
 
 	service := NewServiceAuth(repo)
@@ -258,7 +254,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err := dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
+				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
 				if err != nil {
 					t.Error(err)
 				}
@@ -268,7 +264,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 }
 
 func TestServiceAuth_generatePassword(t *testing.T) {
-	token := generatePasswordHash("123456")
+	token := generatePasswordHash(mockPassword)
 	if token == "" {
 		t.Error("token is empty")
 	}
