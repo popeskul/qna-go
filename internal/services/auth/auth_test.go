@@ -18,20 +18,38 @@ import (
 	"testing"
 )
 
+var dbConn *sql.DB
+
+func TestMain(m *testing.M) {
+	err := changeDirToRoot()
+	if err != nil {
+		log.Fatalf("Some error occured. Err: %s", err)
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatalf("Some error occured. Err: %s", err)
+	}
+
+	db, err := newDBConnection(cfg)
+	dbConn = db
+	if err != nil {
+		log.Fatalf("Some error occured. Err: %s", err)
+	}
+	defer db.Close()
+
+	os.Exit(m.Run())
+}
+
 func TestServiceAuth_CreateUser(t *testing.T) {
 	mockEmail := "TestServiceAuth_CreateUser@example.com"
 	mockUniqueEmail := "test_unique_email@mail.com"
 	mockPassword := "12345"
 
-	db, err := newDBConnection()
-	if err != nil {
-		t.Error(err)
-	}
-
-	repo := repository.NewRepository(db)
+	repo := repository.NewRepository(dbConn)
 
 	// Create seed user for testing duplicate email
-	_, err = repo.GetUser(mockUniqueEmail, mockPassword)
+	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
 		_, err = repo.CreateUser(domain.SignUpInput{
 			Email:             mockUniqueEmail,
@@ -94,7 +112,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 			}
 
 			// cleanup
-			_, err = db.Exec("DELETE FROM users WHERE email = $1", tt.args.input.Email)
+			_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.input.Email)
 			if err != nil {
 				t.Error(err)
 			}
@@ -106,13 +124,8 @@ func TestServiceAuth_GetUser(t *testing.T) {
 	mockEmail := "TestServiceAuth_GetUser@test.com"
 	mockPassword := "12345"
 
-	db, err := newDBConnection()
-	if err != nil {
-		t.Error(err)
-	}
-
-	repo := repository.NewRepository(db)
-	_, err = repo.CreateUser(domain.SignUpInput{
+	repo := repository.NewRepository(dbConn)
+	_, err := repo.CreateUser(domain.SignUpInput{
 		Email:             mockEmail,
 		EncryptedPassword: mockPassword,
 	})
@@ -172,7 +185,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 			}
 
 			// cleanup
-			_, err = db.Exec("DELETE FROM users WHERE email = $1", tt.args.email)
+			_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.email)
 			if err != nil {
 				t.Error(err)
 			}
@@ -186,13 +199,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 		EncryptedPassword: "123456",
 	}
 
-	// Create seed user for testing duplicate email
-	db, err := newDBConnection()
-	if err != nil {
-		t.Error(err)
-	}
-
-	repo := repository.NewRepository(db)
+	repo := repository.NewRepository(dbConn)
 	service := NewServiceAuth(repo)
 
 	_, _ = service.CreateUser(domain.SignUpInput{
@@ -215,7 +222,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				repo: repository.NewRepository(db),
+				repo: repository.NewRepository(dbConn),
 			},
 			args: args{
 				user: &mockUser,
@@ -225,7 +232,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 		{
 			name: "fail",
 			fields: fields{
-				repo: repository.NewRepository(db),
+				repo: repository.NewRepository(dbConn),
 			},
 			args: args{
 				user: &domain.User{
@@ -250,7 +257,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 
 			// cleanup
 			t.Cleanup(func() {
-				_, err := db.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
+				_, err := dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
 				if err != nil {
 					t.Error(err)
 				}
@@ -266,13 +273,19 @@ func TestServiceAuth_generatePassword(t *testing.T) {
 	}
 }
 
-func newDBConnection() (*sql.DB, error) {
-	err := changeDirToRoot()
-	if err != nil {
-		return nil, err
-	}
+func newDBConnection(cfg *config.Config) (*sql.DB, error) {
+	return postgres.NewPostgresConnection(db.ConfigDB{
+		Host:     cfg.DB.Host,
+		Port:     cfg.DB.Port,
+		User:     cfg.DB.User,
+		Password: cfg.DB.Password,
+		DBName:   cfg.DB.DBName,
+		SSLMode:  cfg.DB.SSLMode,
+	})
+}
 
-	err = godotenv.Load(".env")
+func loadConfig() (*config.Config, error) {
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
@@ -283,14 +296,7 @@ func newDBConnection() (*sql.DB, error) {
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
-	return postgres.NewPostgresConnection(db.ConfigDB{
-		Host:     cfg.DB.Host,
-		Port:     cfg.DB.Port,
-		User:     cfg.DB.User,
-		Password: cfg.DB.Password,
-		DBName:   cfg.DB.DBName,
-		SSLMode:  cfg.DB.SSLMode,
-	})
+	return cfg, nil
 }
 
 func changeDirToRoot() error {
