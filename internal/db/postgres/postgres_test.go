@@ -13,19 +13,13 @@ import (
 	"testing"
 )
 
-func init() {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := path.Join(path.Dir(filename), "./../../../")
-	err := os.Chdir(dir)
-	if err != nil {
+func TestMain(m *testing.M) {
+	if err := changeDirToRoot(); err != nil {
 		log.Fatal(err)
 	}
-}
 
-func TestMain(m *testing.M) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal(err)
 	}
 
 	os.Exit(m.Run())
@@ -87,4 +81,15 @@ func TestNewPostgresConnection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func changeDirToRoot() error {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := path.Join(path.Dir(filename), "./../../../")
+	err := os.Chdir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
 }
