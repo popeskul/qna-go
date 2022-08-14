@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-var validate *validator.Validate
-
 func Test_SignUpInput(t *testing.T) {
 	validate = validator.New()
 
