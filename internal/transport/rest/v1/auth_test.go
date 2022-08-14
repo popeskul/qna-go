@@ -88,15 +88,13 @@ func TestAuth_SignUp(t *testing.T) {
 			}
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-up", bytes.NewReader(tt.user))
 			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
 
 			r := gin.Default()
 			r.POST("/api/v1/auth/sign-up", handlers.SignUp)
-			r.ServeHTTP(w, req)
 
-			if w.Code != tt.status {
-				t.Errorf("Expected status code %d, got %d", tt.status, w.Code)
-			}
+			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
+				return w.Code == tt.status
+			})
 
 			t.Cleanup(func() {
 				if _, err := dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2)", mockEmail, mockUniqEmail); err != nil {
@@ -148,15 +146,13 @@ func TestAuth_SignIn(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", bytes.NewReader(tt.user))
 			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
 
 			r := gin.Default()
 			r.POST("/api/v1/auth/sign-in", handlers.SignIn)
-			r.ServeHTTP(w, req)
 
-			if w.Code != tt.status {
-				t.Errorf("Expected status code %d, got %d", tt.status, w.Code)
-			}
+			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
+				return w.Code == tt.status
+			})
 
 			t.Cleanup(func() {
 				if _, err := dbConn.Exec("DELETE FROM users WHERE email IN ($1)", mockEmail); err != nil {
@@ -164,6 +160,19 @@ func TestAuth_SignIn(t *testing.T) {
 				}
 			})
 		})
+	}
+}
+
+// Helper function to process a request and test its response
+func testHTTPResponse(t *testing.T, r *gin.Engine, req *http.Request, f func(w *httptest.ResponseRecorder) bool) {
+	// Create a response recorder
+	w := httptest.NewRecorder()
+
+	// Create the service and process the above request.
+	r.ServeHTTP(w, req)
+
+	if !f(w) {
+		t.Fail()
 	}
 }
 
