@@ -9,8 +9,8 @@ import (
 
 var (
 	ErrDuplicateAuthorID = errors.New("pq: duplicate key value violates unique constraint \"tests_author_id_key\"")
-	ErrTestTitleEmpty    = errors.New("test title is empty")
 	ErrTestAuthorIDEmpty = errors.New("author id is empty")
+	ErrEmptyTitle        = errors.New("title is empty")
 )
 
 type RepositoryTests struct {
@@ -31,7 +31,7 @@ func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (
 	defer tx.Rollback()
 
 	if inputTest.Title == "" {
-		return 0, ErrTestTitleEmpty
+		return 0, ErrEmptyTitle
 	}
 
 	if authorID == 0 {
@@ -55,4 +55,48 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	}
 
 	return test, nil
+}
+
+func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if inputTest.Title == "" {
+		return ErrEmptyTitle
+	}
+
+	if testID == 0 {
+		return ErrTestAuthorIDEmpty
+	}
+
+	updateTestQuery := fmt.Sprintf("UPDATE tests SET title = $1 WHERE id = $2")
+	if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *RepositoryTests) DeleteTestById(testID int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("testID: ", testID)
+	defer tx.Rollback()
+
+	if testID == 0 {
+		return ErrTestAuthorIDEmpty
+	}
+
+	deleteTestQuery := fmt.Sprintf("DELETE FROM tests WHERE id = $1")
+	if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

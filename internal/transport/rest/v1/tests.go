@@ -17,7 +17,9 @@ func (h *Handlers) InitTestsRouter(v1 *gin.RouterGroup) {
 	testsAPI := v1.Group("/tests", h.authMiddleware)
 	{
 		testsAPI.POST("/", h.CreateTest)
-		testsAPI.GET("/:id", h.GetTest)
+		testsAPI.GET("/:id", h.GetTestByID)
+		testsAPI.PUT("/:id", h.UpdateTestByID)
+		testsAPI.DELETE("/:id", h.DeleteTestByID)
 	}
 }
 
@@ -46,7 +48,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 	})
 }
 
-func (h *Handlers) GetTest(c *gin.Context) {
+func (h *Handlers) GetTestByID(c *gin.Context) {
 	_, error := getUserId(c)
 	if error != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
@@ -65,9 +67,59 @@ func (h *Handlers) GetTest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"test":   test,
+	})
+}
+
+func (h *Handlers) UpdateTestByID(c *gin.Context) {
+	if _, error := getUserId(c); error != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		return
+	}
+
+	testID, err := getIdFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var test domain.TestInput
+	if err := c.ShouldBindJSON(&test); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err = h.service.Tests.UpdateTestByID(testID, test); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
+}
+
+func (h *Handlers) DeleteTestByID(c *gin.Context) {
+	if _, error := getUserId(c); error != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		return
+	}
+
+	testID, err := getIdFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err = h.service.Tests.DeleteTestByID(testID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
 	})
 }
 

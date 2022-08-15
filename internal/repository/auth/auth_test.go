@@ -2,7 +2,7 @@ package auth
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
@@ -13,51 +13,18 @@ import (
 	"path"
 	"runtime"
 	"testing"
-
-	_ "github.com/lib/pq"
 )
-
-var dbConn *sql.DB
-var repo *RepositoryAuth
-
-func TestMain(m *testing.M) {
-	if err := changeDirToRoot(); err != nil {
-		log.Fatal(err)
-	}
-
-	cfg, err := loadConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db, err := newDBConnection(cfg)
-	dbConn = db
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	repo = NewRepoAuth(dbConn)
-
-	os.Exit(m.Run())
-}
 
 func TestRepositoryAuth_CreateUser(t *testing.T) {
 	mockSimpleEmail := "testting1@test.com"
 	mockUniqueEmail := "test_unique_email@mail.com"
 	mockPassword := "12345"
 
-	// Create user with simple email
-	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
-	if err != nil {
-		_, err = repo.CreateUser(domain.SignUpInput{
-			Email:    mockUniqueEmail,
-			Password: mockPassword,
-			Name:     "test",
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
+	userID, _ := mockRepo.CreateUser(domain.SignUpInput{
+		Email:    mockUniqueEmail,
+		Password: mockPassword,
+		Name:     "test",
+	})
 
 	type fields struct {
 		repo *RepositoryAuth
@@ -74,7 +41,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 		{
 			name: "CreateUser",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
 				u: domain.SignUpInput{
@@ -88,7 +55,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 		{
 			name: "CreateUser_DuplicateEmail",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
 				u: domain.SignUpInput{
@@ -102,23 +69,29 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.fields.repo.CreateUser(tt.args.u)
+			id, err := tt.fields.repo.CreateUser(tt.args.u)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryAuth.CreateUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			t.Cleanup(func() {
-				helperDeleteUserByEmail(t, tt.args.u.Email)
+				helperDeleteUserByID(t, id)
 			})
 		})
 	}
+
+	t.Cleanup(func() {
+		if err := mockRepo.DeleteUserById(userID); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestRepositoryAuth_GetUser(t *testing.T) {
 	mockEmail := "testting2@test.com"
 	mockPassword := "12345"
-	userId, err := repo.CreateUser(domain.SignUpInput{
+	userId, err := mockRepo.CreateUser(domain.SignUpInput{
 		Name:     "John Doe",
 		Email:    mockEmail,
 		Password: mockPassword,
@@ -143,7 +116,7 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 		{
 			name: "GetUser",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
 				email:    mockEmail,
@@ -165,16 +138,77 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				helperDeleteUserByEmail(t, tt.args.email)
+				if err != nil {
+					helperDeleteUserByID(t, got.ID)
+				}
 			})
 		})
 	}
+
+	t.Cleanup(func() {
+		if err := mockRepo.DeleteUserById(userId); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
-func helperDeleteUserByEmail(t *testing.T, email string) {
-	t.Helper()
-	cleanupQuery := fmt.Sprintf("DELETE FROM users WHERE email = $1")
-	if _, err := dbConn.Exec(cleanupQuery, email); err != nil {
+func TestRepositoryAuth_DeleteUserById(t *testing.T) {
+	user := domain.SignUpInput{
+		Name:     "John Doe",
+		Email:    "TestRepositoryAuth_DeleteUserById@mail.com",
+		Password: "12345",
+	}
+	userId, err := mockRepo.CreateUser(user)
+	if err != nil {
+		t.Error(err)
+	}
+
+	type args struct {
+		repo *RepositoryAuth
+	}
+	type want struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Success: DeleteUserById",
+			args: args{
+				repo: mockRepo,
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		{
+			name: "Fail: DeleteUserById",
+			args: args{
+				repo: mockRepo,
+			},
+			want: want{
+				err: errors.New("record not found"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.args.repo.DeleteUserById(userId); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userId)
+	})
+}
+
+func helperDeleteUserByID(t *testing.T, id int) {
+	if err := mockRepo.DeleteUserById(id); err != nil {
 		t.Error(err)
 	}
 }

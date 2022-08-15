@@ -10,11 +10,14 @@ import (
 type Auth interface {
 	CreateUser(userInput domain.SignUpInput) (int, error)
 	GetUser(email, password string) (domain.User, error)
+	DeleteUserById(userID int) error
 }
 
 type Tests interface {
 	CreateTest(userID int, testInput domain.TestInput) (int, error)
 	GetTest(testID int) (domain.Test, error)
+	UpdateTestById(testID int, testInput domain.TestInput) error
+	DeleteTestById(testID int) error
 }
 
 type Repository struct {

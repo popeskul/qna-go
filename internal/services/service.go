@@ -17,6 +17,8 @@ type Auth interface {
 type Tests interface {
 	CreateTest(userID int, testInput domain.TestInput) (int, error)
 	GetTest(testID int) (domain.Test, error)
+	UpdateTestByID(testID int, testInput domain.TestInput) error
+	DeleteTestByID(testID int) error
 }
 
 type Service struct {

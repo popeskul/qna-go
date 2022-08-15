@@ -43,3 +43,18 @@ func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 
 	return user, nil
 }
+
+func (r *RepositoryAuth) DeleteUserById(userID int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	deleteUserQuery := fmt.Sprintf("DELETE FROM users WHERE id = $1")
+	if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}

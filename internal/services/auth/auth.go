@@ -76,6 +76,10 @@ func (s *ServiceAuth) ParseToken(accessToken string) (int, error) {
 	return claims.UserId, nil
 }
 
+func (s *ServiceAuth) DeleteUserById(userID int) error {
+	return s.repo.DeleteUserById(userID)
+}
+
 func generatePasswordHash(password string) string {
 	hash := sha1.New()
 	hash.Write([]byte(password))
