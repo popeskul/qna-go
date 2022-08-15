@@ -19,6 +19,7 @@ func (h *Handlers) Init(api *gin.RouterGroup) *gin.RouterGroup {
 	v1 := api.Group("/v1")
 	{
 		h.InitAuthRouter(v1)
+		h.InitTestsRouter(v1)
 	}
 
 	return v1

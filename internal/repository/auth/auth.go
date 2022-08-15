@@ -25,7 +25,7 @@ func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 
 	var id int
 	createUserQuery := fmt.Sprintf("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
-	if err = r.db.QueryRow(createUserQuery, u.Name, u.Email, u.EncryptedPassword).Scan(&id); err != nil {
+	if err = r.db.QueryRow(createUserQuery, u.Name, u.Email, u.Password).Scan(&id); err != nil {
 		return 0, err
 	}
 

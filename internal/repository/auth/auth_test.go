@@ -50,9 +50,9 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
 		_, err = repo.CreateUser(domain.SignUpInput{
-			Email:             mockUniqueEmail,
-			EncryptedPassword: mockPassword,
-			Name:              "test",
+			Email:    mockUniqueEmail,
+			Password: mockPassword,
+			Name:     "test",
 		})
 		if err != nil {
 			t.Error(err)
@@ -78,9 +78,9 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 			},
 			args: args{
 				u: domain.SignUpInput{
-					Name:              "John Doe",
-					Email:             mockSimpleEmail,
-					EncryptedPassword: "encrypted_password",
+					Name:     "John Doe",
+					Email:    mockSimpleEmail,
+					Password: "encrypted_password",
 				},
 			},
 			wantErr: false,
@@ -119,9 +119,9 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 	mockEmail := "testting2@test.com"
 	mockPassword := "12345"
 	userId, err := repo.CreateUser(domain.SignUpInput{
-		Name:              "John Doe",
-		Email:             mockEmail,
-		EncryptedPassword: mockPassword,
+		Name:     "John Doe",
+		Email:    mockEmail,
+		Password: mockPassword,
 	})
 	if err != nil {
 		t.Error(err)
@@ -196,7 +196,7 @@ func loadConfig() (*config.Config, error) {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
 
-	cfg, err := config.New("configs", "config")
+	cfg, err := config.New("configs", "test.config")
 	if err != nil {
 		return nil, err
 	}

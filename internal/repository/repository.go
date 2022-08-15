@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository/auth"
+	"github.com/popeskul/qna-go/internal/repository/tests"
 )
 
 type Auth interface {
@@ -11,8 +12,14 @@ type Auth interface {
 	GetUser(email, password string) (domain.User, error)
 }
 
+type Tests interface {
+	CreateTest(userID int, testInput domain.TestInput) (int, error)
+	GetTest(testID int) (domain.Test, error)
+}
+
 type Repository struct {
 	Auth
+	Tests
 }
 
 func NewRepository(db *sql.DB) *Repository {
@@ -21,6 +28,7 @@ func NewRepository(db *sql.DB) *Repository {
 	}
 
 	return &Repository{
-		Auth: auth.NewRepoAuth(db),
+		Auth:  auth.NewRepoAuth(db),
+		Tests: tests.NewRepoTests(db),
 	}
 }

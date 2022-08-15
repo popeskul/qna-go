@@ -16,23 +16,14 @@ func Test_TestInput(t *testing.T) {
 		{
 			name: "valid",
 			fields: TestInput{
-				Title:    "test",
-				AuthorID: 1,
+				Title: "test",
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalid title, with min length",
 			fields: TestInput{
-				Title:    "",
-				AuthorID: 1,
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid without author id",
-			fields: TestInput{
-				Title: "123123123",
+				Title: "",
 			},
 			wantErr: true,
 		},

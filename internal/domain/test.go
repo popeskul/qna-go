@@ -9,6 +9,5 @@ type Test struct {
 }
 
 type TestInput struct {
-	Title    string `json:"title" validate:"required,min=3,max=255"`
-	AuthorID int    `json:"author_id" validate:"required,min=1"`
+	Title string `json:"title" validate:"required,min=3,max=255"`
 }
