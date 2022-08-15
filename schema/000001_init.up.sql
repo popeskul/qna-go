@@ -40,8 +40,8 @@ CREATE TABLE test_passages
 CREATE TABLE tests
 (
     id serial not null unique,
-    title varchar(255),
-    author_id bigint NOT NULL unique,
+    title varchar(255) NOT NULL,
+    author_id bigint NOT NULL,
     created_at timestamp NOT NULL DEFAULT (now()),
     updated_at timestamp NOT NULL DEFAULT (now())
 );

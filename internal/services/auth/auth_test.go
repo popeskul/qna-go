@@ -53,9 +53,9 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
 	if err != nil {
 		_, err = repo.CreateUser(domain.SignUpInput{
-			Email:             mockUniqueEmail,
-			EncryptedPassword: mockPassword,
-			Name:              "test",
+			Email:    mockUniqueEmail,
+			Password: mockPassword,
+			Name:     "test",
 		})
 		if err != nil {
 			t.Error(err)
@@ -81,8 +81,8 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 			},
 			args: args{
 				input: domain.SignUpInput{
-					Email:             mockEmail,
-					EncryptedPassword: mockPassword,
+					Email:    mockEmail,
+					Password: mockPassword,
 				},
 			},
 			err: nil,
@@ -94,8 +94,8 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 			},
 			args: args{
 				input: domain.SignUpInput{
-					Email:             mockUniqueEmail,
-					EncryptedPassword: mockPassword,
+					Email:    mockUniqueEmail,
+					Password: mockPassword,
 				},
 			},
 			err: errors.New("duplicate key value violates unique constraint"),
@@ -124,8 +124,8 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 
 func TestServiceAuth_GetUser(t *testing.T) {
 	_, err := repo.CreateUser(domain.SignUpInput{
-		Email:             mockEmail,
-		EncryptedPassword: mockPassword,
+		Email:    mockEmail,
+		Password: mockPassword,
 	})
 	if err != nil {
 		t.Error(err)
@@ -201,8 +201,8 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 	service := NewServiceAuth(repo)
 
 	_, _ = service.CreateUser(domain.SignUpInput{
-		Email:             mockUser.Email,
-		EncryptedPassword: mockUser.EncryptedPassword,
+		Email:    mockUser.Email,
+		Password: mockUser.EncryptedPassword,
 	})
 
 	type fields struct {
@@ -286,7 +286,7 @@ func loadConfig() (*config.Config, error) {
 		return nil, err
 	}
 
-	cfg, err := config.New("configs", "config")
+	cfg, err := config.New("configs", "test.config")
 	if err != nil {
 		return nil, err
 	}

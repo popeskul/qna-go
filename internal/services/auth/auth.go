@@ -32,7 +32,7 @@ func NewServiceAuth(repo repository.Auth) *ServiceAuth {
 }
 
 func (s *ServiceAuth) CreateUser(input domain.SignUpInput) (int, error) {
-	input.EncryptedPassword = generatePasswordHash(input.EncryptedPassword)
+	input.Password = generatePasswordHash(input.Password)
 	return s.repo.CreateUser(input)
 }
 
@@ -74,6 +74,10 @@ func (s *ServiceAuth) ParseToken(accessToken string) (int, error) {
 	}
 
 	return claims.UserId, nil
+}
+
+func (s *ServiceAuth) DeleteUserById(userID int) error {
+	return s.repo.DeleteUserById(userID)
 }
 
 func generatePasswordHash(password string) string {

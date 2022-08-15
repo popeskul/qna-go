@@ -25,7 +25,7 @@ func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 
 	var id int
 	createUserQuery := fmt.Sprintf("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
-	if err = r.db.QueryRow(createUserQuery, u.Name, u.Email, u.EncryptedPassword).Scan(&id); err != nil {
+	if err = r.db.QueryRow(createUserQuery, u.Name, u.Email, u.Password).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -42,4 +42,19 @@ func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 	}
 
 	return user, nil
+}
+
+func (r *RepositoryAuth) DeleteUserById(userID int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	deleteUserQuery := fmt.Sprintf("DELETE FROM users WHERE id = $1")
+	if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
