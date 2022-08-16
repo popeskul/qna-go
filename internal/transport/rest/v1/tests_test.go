@@ -201,6 +201,9 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 	}
 
 	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	if err != nil {
+		t.Errorf("error generating token: %v", err)
+	}
 
 	newTitle := "title1"
 	validJSON := []byte(`{"title": "` + newTitle + `"}`)
@@ -291,6 +294,9 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 	}
 
 	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	if err != nil {
+		t.Errorf("error generating token: %v", err)
+	}
 
 	type args struct {
 		token string
