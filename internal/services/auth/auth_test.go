@@ -22,7 +22,7 @@ var (
 	dbConn          *sql.DB
 	repo            *repository.Repository
 	mockEmail       = "TestServiceAuth_CreateUser@example.com"
-	mockUniqueEmail = "test_unique_email@mail.com"
+	mockUniqueEmail = "service_test_unique_email@mail.com"
 	mockPassword    = "12345"
 )
 
@@ -49,19 +49,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestServiceAuth_CreateUser(t *testing.T) {
-	// Create seed user for testing duplicate email
-	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
-	if err != nil {
-		_, err = repo.CreateUser(domain.SignUpInput{
-			Email:    mockUniqueEmail,
-			Password: mockPassword,
-			Name:     "test",
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
-
 	type fields struct {
 		repo *repository.Repository
 	}
@@ -104,8 +91,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServiceAuth(tt.fields.repo)
-			_, err = s.CreateUser(tt.args.input)
+			_, err := NewServiceAuth(tt.fields.repo).CreateUser(tt.args.input)
 			if err != nil {
 				if strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
@@ -113,17 +99,14 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2, $3)", tt.args.input.Email, mockUniqueEmail, mockEmail)
-				if err != nil {
-					t.Error(err)
-				}
+				_, _ = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2, $3)", tt.args.input.Email, mockUniqueEmail, mockEmail)
 			})
 		})
 	}
 }
 
 func TestServiceAuth_GetUser(t *testing.T) {
-	_, err := repo.CreateUser(domain.SignUpInput{
+	userID, err := repo.CreateUser(domain.SignUpInput{
 		Email:    mockEmail,
 		Password: mockPassword,
 	})
@@ -181,15 +164,12 @@ func TestServiceAuth_GetUser(t *testing.T) {
 					t.Errorf("ServiceAuth.GetUser() error = %v, wantErr %v", err, tt.want)
 				}
 			}
-
-			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2)", tt.args.email, mockEmail)
-				if err != nil {
-					t.Error(err)
-				}
-			})
 		})
 	}
+
+	t.Cleanup(func() {
+		helperDeleteUser(userID)
+	})
 }
 
 func TestServiceAuth_GenerateToken(t *testing.T) {
@@ -268,6 +248,10 @@ func TestServiceAuth_generatePassword(t *testing.T) {
 	if token == "" {
 		t.Error("token is empty")
 	}
+}
+
+func helperDeleteUser(id int) {
+	_, _ = dbConn.Exec("DELETE FROM users WHERE id = $1", id)
 }
 
 func newDBConnection(cfg *config.Config) (*sql.DB, error) {
