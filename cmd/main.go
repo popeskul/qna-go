@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
@@ -18,6 +18,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -26,8 +30,7 @@ const (
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
 
@@ -36,6 +39,10 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+
+	if err = runMigration(cfg); err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := postgres.NewPostgresConnection(db.ConfigDB{
 		Host:     cfg.DB.Host,
@@ -82,4 +89,18 @@ func main() {
 	}
 
 	fmt.Println("Server stopped")
+}
+
+func runMigration(cfg *config.Config) error {
+	migrationPath := "file://schema"
+	dbConn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.DBName, cfg.DB.SSLMode)
+	m, err := migrate.New(migrationPath, dbConn)
+	if err != nil {
+		return err
+	}
+	if err = m.Up(); err != nil {
+		return err
+	}
+
+	return nil
 }
