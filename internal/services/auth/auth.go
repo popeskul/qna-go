@@ -32,7 +32,12 @@ func NewServiceAuth(repo repository.Auth) *ServiceAuth {
 }
 
 func (s *ServiceAuth) CreateUser(input domain.SignUpInput) (int, error) {
-	input.Password = generatePasswordHash(input.Password)
+	passwordPasha, err := generatePasswordHash(input.Password)
+	if err != nil {
+		return 0, err
+	}
+	
+	input.Password = passwordPasha
 	return s.repo.CreateUser(input)
 }
 
@@ -41,7 +46,12 @@ func (s *ServiceAuth) GetUser(email, password string) (domain.User, error) {
 }
 
 func (s *ServiceAuth) GenerateToken(username, password string) (string, error) {
-	user, err := s.repo.GetUser(username, generatePasswordHash(password))
+	passwordHash, err := generatePasswordHash(password)
+	if err != nil {
+		return "", err
+	}
+
+	user, err := s.repo.GetUser(username, passwordHash)
 	if err != nil {
 		return "", err
 	}
@@ -80,8 +90,11 @@ func (s *ServiceAuth) DeleteUserById(userID int) error {
 	return s.repo.DeleteUserById(userID)
 }
 
-func generatePasswordHash(password string) string {
+func generatePasswordHash(password string) (string, error) {
 	hash := sha1.New()
-	hash.Write([]byte(password))
-	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
+	_, err := hash.Write([]byte(password))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", hash.Sum([]byte(salt))), nil
 }

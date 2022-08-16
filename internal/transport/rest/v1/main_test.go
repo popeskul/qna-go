@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	mockServices = services.NewService(mockRepo)
 	mockHandlers = NewHandler(mockServices)
 
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func testHTTPResponse(t *testing.T, r *gin.Engine, req *http.Request, f func(w *httptest.ResponseRecorder) bool) {

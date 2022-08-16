@@ -244,7 +244,10 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 }
 
 func TestServiceAuth_generatePassword(t *testing.T) {
-	token := generatePasswordHash(mockPassword)
+	token, err := generatePasswordHash(mockPassword)
+	if err != nil {
+		t.Error(err)
+	}
 	if token == "" {
 		t.Error("token is empty")
 	}
