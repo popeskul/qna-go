@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
@@ -9,20 +8,18 @@ import (
 	"strconv"
 )
 
-type Tests interface {
-	CreateTest(ctx context.Context, test domain.TestInput) error
-}
-
-func (h *Handlers) InitTestsRouter(v1 *gin.RouterGroup) {
-	testsAPI := v1.Group("/tests", h.authMiddleware)
-	{
-		testsAPI.POST("/", h.CreateTest)
-		testsAPI.GET("/:id", h.GetTestByID)
-		testsAPI.PUT("/:id", h.UpdateTestByID)
-		testsAPI.DELETE("/:id", h.DeleteTestByID)
-	}
-}
-
+// CreateTest godoc
+// @Summary Create test
+// @Tags tests
+// @Description Create test
+// @ID create-test
+// @Accept  json
+// @Produce  json
+// @Param test body domain.TestInput true "test"
+// @Success 200 {object} domain.Test
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /tests [post]
 func (h *Handlers) CreateTest(c *gin.Context) {
 	userId, error := getUserId(c)
 	if error != nil {
@@ -48,6 +45,18 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 	})
 }
 
+// GetTestByID godoc
+// @Summary Get test by id
+// @Tags tests
+// @Description Get test by id
+// @ID get-test-by-id
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Success 200 {object} domain.Test
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /tests/{id} [get]
 func (h *Handlers) GetTestByID(c *gin.Context) {
 	_, error := getUserId(c)
 	if error != nil {
@@ -73,6 +82,19 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 	})
 }
 
+// UpdateTestByID godoc
+// @Summary Update test by id
+// @Tags tests
+// @Description Update test by id
+// @ID update-test-by-id
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Param test body domain.TestInput true "test"
+// @Success 200 {object} domain.Test
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /tests/{id} [put]
 func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
@@ -101,6 +123,18 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	})
 }
 
+// DeleteTestByID godoc
+// @Summary Delete test by id
+// @Tags tests
+// @Description Delete test by id
+// @ID delete-test-by-id
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Success 200 {object} domain.Test
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /tests/{id} [delete]
 func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})

@@ -16,11 +16,19 @@ func NewHandler(service *services.Service) *Handlers {
 }
 
 func (h *Handlers) Init(api *gin.RouterGroup) *gin.RouterGroup {
-	v1 := api.Group("/v1")
+	authAPI := api.Group("/auth")
 	{
-		h.InitAuthRouter(v1)
-		h.InitTestsRouter(v1)
+		authAPI.POST("/sign-up", h.SignUp)
+		authAPI.POST("/sign-in", h.SignIn)
 	}
 
-	return v1
+	testsAPI := api.Group("/tests", h.authMiddleware)
+	{
+		testsAPI.POST("/", h.CreateTest)
+		testsAPI.GET("/:id", h.GetTestByID)
+		testsAPI.PUT("/:id", h.UpdateTestByID)
+		testsAPI.DELETE("/:id", h.DeleteTestByID)
+	}
+
+	return api
 }

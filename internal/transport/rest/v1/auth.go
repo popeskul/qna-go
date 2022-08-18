@@ -1,25 +1,23 @@
 package v1
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
 )
 
-type Auth interface {
-	SignUp(ctx context.Context, user domain.SignUpInput) error
-	SignIn(ctx context.Context, user domain.SignInInput) (domain.User, error)
-}
-
-func (h *Handlers) InitAuthRouter(v1 *gin.RouterGroup) {
-	usersAPI := v1.Group("/auth")
-	{
-		usersAPI.POST("/sign-up", h.SignUp)
-		usersAPI.POST("/sign-in", h.SignIn)
-	}
-}
-
+// SignUp godoc
+// @Tags auth
+// @Summary Sign up
+// @Description Sign up a new user
+// @ID sign-up
+// @Accept  json
+// @Produce  json
+// @Param user body domain.SignUpInput true "User"
+// @Success 200 {object} domain.User
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /auth/sign-up [post]
 func (h *Handlers) SignUp(c *gin.Context) {
 	var user domain.SignUpInput
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -39,6 +37,18 @@ func (h *Handlers) SignUp(c *gin.Context) {
 	})
 }
 
+// SignIn
+// @Summary Sign in
+// @Tags auth
+// @Description Sign in user
+// @ID sign-in
+// @Accept  json
+// @Produce  json
+// @Param user body domain.SignInInput true "User"
+// @Success 200 {object} domain.User
+// @Failure 400 {object} error: error.Error
+// @Failure 500 {object} error: error.Error
+// @Router /auth/sign-in [post]
 func (h *Handlers) SignIn(c *gin.Context) {
 	var input domain.SignInInput
 	if err := c.ShouldBindJSON(&input); err != nil {
