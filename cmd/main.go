@@ -3,6 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
@@ -12,12 +19,6 @@ import (
 	"github.com/popeskul/qna-go/internal/server"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/transport/rest"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -99,6 +100,12 @@ func runMigration(cfg *config.Config) error {
 		return err
 	}
 	if err = m.Up(); err != nil {
+		// because of the way up and down works, we need to check for the ErrNoChange error
+		// without this check, the application will panic if the database is already up-to-date
+		if err == migrate.ErrNoChange {
+			return nil
+		}
+
 		return err
 	}
 
