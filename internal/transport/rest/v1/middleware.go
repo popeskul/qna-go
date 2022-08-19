@@ -24,13 +24,13 @@ var (
 func (h *Handlers) authMiddleware(c *gin.Context) {
 	token, err := getTokenFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": invalidAuthorizationHeader})
+		newErrorResponse(c, http.StatusUnauthorized, invalidAuthorizationHeader)
 		return
 	}
 
 	userId, err := h.service.Auth.ParseToken(token)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": unauthenticatedUserError})
+		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
 		return
 	}
 
@@ -61,13 +61,13 @@ func getUserId(c *gin.Context) (int, error) {
 	id, ok := c.Get("userId")
 
 	if !ok {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": unauthenticatedUserError})
+		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
 		return 0, ErrUserIsNotAuthorized
 	}
 
 	idInt, ok := id.(int)
 	if !ok {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": unauthenticatedUserError})
+		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
 		return 0, ErrUserIdNotFound
 	}
 
