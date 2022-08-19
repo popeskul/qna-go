@@ -26,19 +26,19 @@ func (h *Handlers) InitTestsRouter(v1 *gin.RouterGroup) {
 func (h *Handlers) CreateTest(c *gin.Context) {
 	userId, error := getUserId(c)
 	if error != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		newErrorResponse(c, http.StatusUnauthorized, error.Error())
 		return
 	}
 
 	var test domain.TestInput
 	if err := c.ShouldBindJSON(&test); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.service.Tests.CreateTest(userId, test)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -51,19 +51,19 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 func (h *Handlers) GetTestByID(c *gin.Context) {
 	_, error := getUserId(c)
 	if error != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		newErrorResponse(c, http.StatusUnauthorized, error.Error())
 		return
 	}
 
 	testID, err := getIdFromRequest(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	test, err := h.service.Tests.GetTest(testID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -75,52 +75,49 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 
 func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		newErrorResponse(c, http.StatusUnauthorized, error.Error())
 		return
 	}
 
 	testID, err := getIdFromRequest(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var test domain.TestInput
 	if err := c.ShouldBindJSON(&test); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = h.service.Tests.UpdateTestByID(testID, test); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-	})
+	c.JSON(http.StatusOK, statusResponse{"success"})
 }
 
 func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": error})
+		newErrorResponse(c, http.StatusUnauthorized, error.Error())
 		return
 	}
 
 	testID, err := getIdFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = h.service.Tests.DeleteTestByID(testID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-	})
+	c.JSON(http.StatusOK, statusResponse{"success"})
 }
 
 func getIdFromRequest(r *gin.Context) (int, error) {
