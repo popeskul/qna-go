@@ -31,15 +31,10 @@ const (
 )
 
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
-	}
-
-	cfg, err := config.New(ConfigDir, ConfigFile)
+	cfg, err := initConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to init config: %v", err)
 	}
-	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
 	if err = runMigration(cfg); err != nil {
 		log.Fatal(err)
@@ -90,6 +85,20 @@ func main() {
 	}
 
 	fmt.Println("Server stopped")
+}
+
+func initConfig() (*config.Config, error) {
+	if err := godotenv.Load(".env"); err != nil {
+		return nil, err
+	}
+
+	cfg, err := config.New(ConfigDir, ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+
+	return cfg, nil
 }
 
 func runMigration(cfg *config.Config) error {
