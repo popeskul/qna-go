@@ -45,16 +45,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/v1.SignInResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             }
@@ -88,16 +92,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/v1.SignUpResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             }
@@ -141,11 +149,15 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             }
@@ -182,16 +194,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Test"
+                            "$ref": "#/definitions/v1.getTestByIDResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             },
@@ -235,16 +251,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Test"
+                            "$ref": "#/definitions/v1.statusResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             },
@@ -279,16 +299,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Test"
+                            "$ref": "#/definitions/v1.statusResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
                     }
                 }
             }
@@ -372,25 +396,51 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.User": {
+        "v1.SignInResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "status": {
                     "type": "string"
                 },
-                "email": {
+                "token": {
                     "type": "string"
-                },
-                "encrypted_password": {
-                    "type": "string"
-                },
+                }
+            }
+        },
+        "v1.SignUpResponse": {
+            "type": "object",
+            "properties": {
                 "id": {
                     "type": "integer"
                 },
-                "name": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.errorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.getTestByIDResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
                     "type": "string"
                 },
-                "updated_at": {
+                "test": {
+                    "$ref": "#/definitions/domain.Test"
+                }
+            }
+        },
+        "v1.statusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
                     "type": "string"
                 }
             }

@@ -8,6 +8,11 @@ import (
 	"strconv"
 )
 
+type getTestByIDResponse struct {
+	Status string      `json:"status"`
+	Test   domain.Test `json:"test"`
+}
+
 // CreateTest godoc
 // @Summary Create test
 // @Security ApiKeyAuth
@@ -18,8 +23,8 @@ import (
 // @Produce  json
 // @Param test body domain.TestInput true "test"
 // @Success 200 {object} domain.Test
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /tests [post]
 func (h *Handlers) CreateTest(c *gin.Context) {
 	userId, error := getUserId(c)
@@ -55,9 +60,9 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "id"
-// @Success 200 {object} domain.Test
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Success 200 {object} getTestByIDResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /tests/{id} [get]
 func (h *Handlers) GetTestByID(c *gin.Context) {
 	_, error := getUserId(c)
@@ -78,9 +83,9 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"test":   test,
+	c.JSON(http.StatusOK, getTestByIDResponse{
+		Status: "success",
+		Test:   test,
 	})
 }
 
@@ -94,9 +99,9 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 // @Produce  json
 // @Param id path int true "id"
 // @Param test body domain.TestInput true "test"
-// @Success 200 {object} domain.Test
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Success 200 {object} statusResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /tests/{id} [put]
 func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {
@@ -133,9 +138,9 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "id"
-// @Success 200 {object} domain.Test
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Success 200 {object} statusResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /tests/{id} [delete]
 func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	if _, error := getUserId(c); error != nil {

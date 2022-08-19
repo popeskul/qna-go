@@ -6,6 +6,16 @@ import (
 	"net/http"
 )
 
+type SignInResponse struct {
+	Status string `json:"status"`
+	Token  string `json:"token"`
+}
+
+type SignUpResponse struct {
+	Status string `json:"status"`
+	ID     int    `json:"id"`
+}
+
 // SignUp godoc
 // @Tags auth
 // @Summary Sign up
@@ -14,9 +24,9 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param user body domain.SignUpInput true "User"
-// @Success 200 {object} domain.User
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Success 200 {object} SignUpResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /auth/sign-up [post]
 func (h *Handlers) SignUp(c *gin.Context) {
 	var user domain.SignUpInput
@@ -31,9 +41,9 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
-		"id":     id,
+	c.JSON(http.StatusCreated, SignUpResponse{
+		Status: "success",
+		ID:     id,
 	})
 }
 
@@ -45,9 +55,9 @@ func (h *Handlers) SignUp(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param user body domain.SignInInput true "User"
-// @Success 200 {object} domain.User
-// @Failure 400 {object} error: error.Error
-// @Failure 500 {object} error: error.Error
+// @Success 200 {object} SignInResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
 // @Router /auth/sign-in [post]
 func (h *Handlers) SignIn(c *gin.Context) {
 	var input domain.SignInInput
@@ -62,8 +72,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"token":  token,
+	c.JSON(http.StatusOK, SignInResponse{
+		Status: "success",
+		Token:  token,
 	})
 }

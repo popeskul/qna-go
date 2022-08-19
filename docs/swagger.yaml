@@ -55,19 +55,35 @@ definitions:
     required:
     - title
     type: object
-  domain.User:
+  v1.SignInResponse:
     properties:
-      created_at:
+      status:
         type: string
-      email:
+      token:
         type: string
-      encrypted_password:
-        type: string
+    type: object
+  v1.SignUpResponse:
+    properties:
       id:
         type: integer
-      name:
+      status:
         type: string
-      updated_at:
+    type: object
+  v1.errorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  v1.getTestByIDResponse:
+    properties:
+      status:
+        type: string
+      test:
+        $ref: '#/definitions/domain.Test'
+    type: object
+  v1.statusResponse:
+    properties:
+      status:
         type: string
     type: object
 host: localhost:8080
@@ -96,13 +112,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.User'
+            $ref: '#/definitions/v1.SignInResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       summary: Sign in
       tags:
       - auth
@@ -125,13 +143,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.User'
+            $ref: '#/definitions/v1.SignUpResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       summary: Sign up
       tags:
       - auth
@@ -157,10 +177,12 @@ paths:
             $ref: '#/definitions/domain.Test'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create test
@@ -184,13 +206,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Test'
+            $ref: '#/definitions/v1.statusResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete test by id
@@ -213,13 +237,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Test'
+            $ref: '#/definitions/v1.getTestByIDResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       security:
       - ApiKeyAuth: []
       summary: Get test by id
@@ -248,13 +274,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Test'
+            $ref: '#/definitions/v1.statusResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update test by id
