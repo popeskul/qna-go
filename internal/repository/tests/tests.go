@@ -29,12 +29,7 @@ func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (
 	if err != nil {
 		return 0, err
 	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
+	defer tx.Rollback() // nolint:errcheck
 
 	if inputTest.Title == "" {
 		return 0, ErrEmptyTitle
@@ -68,12 +63,7 @@ func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput)
 	if err != nil {
 		return err
 	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
+	defer tx.Rollback() // nolint:errcheck
 
 	if inputTest.Title == "" {
 		return ErrEmptyTitle
@@ -96,12 +86,7 @@ func (r *RepositoryTests) DeleteTestById(testID int) error {
 	if err != nil {
 		return err
 	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
+	defer tx.Rollback() // nolint:errcheck
 
 	if testID == 0 {
 		return ErrTestAuthorIDEmpty
