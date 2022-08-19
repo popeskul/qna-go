@@ -87,6 +87,8 @@ func main() {
 	fmt.Println("Server stopped")
 }
 
+// initConfig reading from the .env file and environment variables.
+// If the .env file is not found and, it will use the default config.
 func initConfig() (*config.Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		return nil, err
@@ -101,6 +103,7 @@ func initConfig() (*config.Config, error) {
 	return cfg, nil
 }
 
+// runMigration run the migration for the database.
 func runMigration(cfg *config.Config) error {
 	migrationPath := "file://schema"
 	dbConn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.DBName, cfg.DB.SSLMode)
