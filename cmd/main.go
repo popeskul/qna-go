@@ -39,15 +39,10 @@ const (
 // @in header
 // @name Authorization
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
-	}
-
-	cfg, err := config.New(ConfigDir, ConfigFile)
+	cfg, err := initConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to init config: %v", err)
 	}
-	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
 	if err = runMigration(cfg); err != nil {
 		log.Fatal(err)
@@ -100,6 +95,23 @@ func main() {
 	fmt.Println("Server stopped")
 }
 
+// initConfig reading from the .env file and environment variables.
+// If the .env file is not found and, it will use the default config.
+func initConfig() (*config.Config, error) {
+	if err := godotenv.Load(".env"); err != nil {
+		return nil, err
+	}
+
+	cfg, err := config.New(ConfigDir, ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+
+	return cfg, nil
+}
+
+// runMigration run the migration for the database.
 func runMigration(cfg *config.Config) error {
 	migrationPath := "file://schema"
 	dbConn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.DBName, cfg.DB.SSLMode)
