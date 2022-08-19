@@ -21,12 +21,7 @@ func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
+	defer tx.Rollback() // nolint:errcheck
 
 	var id int
 	createUserQuery := fmt.Sprintln("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
@@ -54,12 +49,7 @@ func (r *RepositoryAuth) DeleteUserById(userID int) error {
 	if err != nil {
 		return err
 	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
+	defer tx.Rollback() // nolint:errcheck
 
 	deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")
 	if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
