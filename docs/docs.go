@@ -104,6 +104,11 @@ const docTemplate = `{
         },
         "/tests": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Create test",
                 "consumes": [
                     "application/json"
@@ -147,6 +152,11 @@ const docTemplate = `{
         },
         "/tests/{id}": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Get test by id",
                 "consumes": [
                     "application/json"
@@ -186,6 +196,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Update test by id",
                 "consumes": [
                     "application/json"
@@ -234,6 +249,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Delete test by id",
                 "consumes": [
                     "application/json"
@@ -375,17 +395,24 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:8080",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Qna API",
+	Description:      "Qna API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

@@ -10,6 +10,7 @@ import (
 
 // CreateTest godoc
 // @Summary Create test
+// @Security ApiKeyAuth
 // @Tags tests
 // @Description Create test
 // @ID create-test
@@ -48,6 +49,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 // GetTestByID godoc
 // @Summary Get test by id
 // @Tags tests
+// @Security ApiKeyAuth
 // @Description Get test by id
 // @ID get-test-by-id
 // @Accept  json
@@ -85,6 +87,7 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 // UpdateTestByID godoc
 // @Summary Update test by id
 // @Tags tests
+// @Security ApiKeyAuth
 // @Description Update test by id
 // @ID update-test-by-id
 // @Accept  json
@@ -128,6 +131,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 // @Tags tests
 // @Description Delete test by id
 // @ID delete-test-by-id
+// @Security ApiKeyAuth
 // @Accept  json
 // @Produce  json
 // @Param id path int true "id"

@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   domain.SignInInput:
     properties:
@@ -69,8 +70,12 @@ definitions:
       updated_at:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: Qna API
+  title: Qna API
+  version: "1.0"
 paths:
   /auth/sign-in:
     post:
@@ -156,6 +161,8 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
+      security:
+      - ApiKeyAuth: []
       summary: Create test
       tags:
       - tests
@@ -184,6 +191,8 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
+      security:
+      - ApiKeyAuth: []
       summary: Delete test by id
       tags:
       - tests
@@ -211,6 +220,8 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
+      security:
+      - ApiKeyAuth: []
       summary: Get test by id
       tags:
       - tests
@@ -244,7 +255,14 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
+      security:
+      - ApiKeyAuth: []
       summary: Update test by id
       tags:
       - tests
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

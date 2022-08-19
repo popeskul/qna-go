@@ -30,6 +30,14 @@ const (
 	ConfigFile = "config"
 )
 
+// @title Qna API
+// @version 1.0
+// @description Qna API
+// @host localhost:8080
+// @basePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
