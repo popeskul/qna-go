@@ -2,8 +2,8 @@ package v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,12 +12,13 @@ import (
 )
 
 func TestAuth_SignUp(t *testing.T) {
-	mockUniqEmail := "TestAuth_SignUpUnique@mail.com"
-	mockEmail := "TestAuth_SignUp@mail.com"
-	mockPassword := "123456"
+	u := randomUser()
+	u2 := randomUser()
 
-	validJSON := []byte(`{"email": "` + mockEmail + `", "encrypted_password": "` + mockPassword + `", "name": "1123"}`)
-	invalidUniqueEmailJSON := []byte(`{"email": "` + mockUniqEmail + `", "encrypted_password": "` + mockPassword + `", "name": "2123"}`)
+	userID := helperCreatUser(t, u)
+
+	validJSON, _ := json.Marshal(u2)
+	invalidUniqueEmailJSON, _ := json.Marshal(u)
 	badJSON := []byte(`bad request`)
 
 	tests := []struct {
@@ -44,9 +45,6 @@ func TestAuth_SignUp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := mockDB.Exec("INSERT INTO users (email, encrypted_password, name) VALUES ($1, $2, $3) RETURNING id", mockUniqEmail, mockPassword, "-"); err != nil {
-				t.Errorf("Some error occured. Err: %mockServices", err)
-			}
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-up", bytes.NewReader(tt.user))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -54,24 +52,37 @@ func TestAuth_SignUp(t *testing.T) {
 			r.POST("/api/v1/auth/sign-up", mockHandlers.SignUp)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
-				return w.Code == tt.status
-			})
+				t.Cleanup(func() {
+					var obj map[string]interface{}
+					if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
+						t.Errorf("error unmarshalling response: %v", err)
+					}
 
-			t.Cleanup(func() {
-				if _, err := mockDB.Exec("DELETE FROM users WHERE email IN ($1, $2)", mockEmail, mockUniqEmail); err != nil {
-					t.Errorf("Some error occured. Err: %mockServices", err)
-				}
+					// if user is created, and it has an id
+					// then delete it
+					if obj["id"] != nil {
+						id := int(obj["id"].(float64))
+						helperDeleteUserByID(t, id)
+					}
+				})
+
+				return w.Code == tt.status
 			})
 		})
 	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userID)
+	})
 }
 
 func TestAuth_SignIn(t *testing.T) {
-	mockEmail := "TestAuth_SignUp@mail.com"
-	mockPassword := "123456"
+	u := randomUser()
 
-	validJSON := []byte(`{"email": "` + mockEmail + `", "password": "` + mockPassword + `"}`)
-	invalidJSON := []byte(`{"email": "wrong@mail.com", "password": "` + mockPassword + `"}`)
+	userID := helperCreatUser(t, u)
+
+	validJSON, _ := json.Marshal(u)
+	invalidJSON, _ := json.Marshal(randomUser())
 	badJSON := []byte(`bad request`)
 
 	tests := []struct {
@@ -98,13 +109,6 @@ func TestAuth_SignIn(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := mockServices.CreateUser(domain.SignUpInput{
-				Email:    mockEmail,
-				Password: mockPassword,
-			}); err != nil {
-				t.Errorf("Some error occured. Err: %mockServices", err)
-			}
-
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", bytes.NewReader(tt.user))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -114,12 +118,10 @@ func TestAuth_SignIn(t *testing.T) {
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.status
 			})
-
-			t.Cleanup(func() {
-				if _, err := mockDB.Exec("DELETE FROM users WHERE email IN ($1)", mockEmail); err != nil {
-					t.Errorf("Some error occured. Err: %mockServices", err)
-				}
-			})
 		})
 	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userID)
+	})
 }
