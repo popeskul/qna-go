@@ -1,3 +1,4 @@
+// Package tests is a struct that contains all functions for the test repository.
 package tests
 
 import (
@@ -15,11 +16,13 @@ var (
 	ErrEmptyTitle        = errors.New("title is empty")
 )
 
+// RepositoryTests provides all the functions to execute the queries and transactions.
 type RepositoryTests struct {
 	db *sql.DB
 	*queries.Queries
 }
 
+// NewRepoTests creates a new instance of RepositoryTests.
 func NewRepoTests(db *sql.DB) *RepositoryTests {
 	return &RepositoryTests{
 		db:      db,
@@ -27,6 +30,7 @@ func NewRepoTests(db *sql.DB) *RepositoryTests {
 	}
 }
 
+// CreateTest creates a new test in the database.
 func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (int, error) {
 	var id int
 
@@ -50,6 +54,8 @@ func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (
 	return id, err
 }
 
+// GetTest returns a test by id.
+// Returns the test and an error if any.
 func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	var test domain.Test
 	getTestQuery := fmt.Sprintln("SELECT * FROM tests WHERE id = $1")
@@ -60,6 +66,8 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	return test, nil
 }
 
+// UpdateTestById updates a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		if inputTest.Title == "" {
@@ -81,6 +89,8 @@ func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput)
 	return err
 }
 
+// DeleteTestById deletes a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) DeleteTestById(testID int) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		if testID == 0 {

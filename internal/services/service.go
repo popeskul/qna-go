@@ -1,3 +1,4 @@
+// Package services implements all services.
 package services
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/popeskul/qna-go/internal/services/tests"
 )
 
+// Auth interface is implemented by auth service.
 type Auth interface {
 	CreateUser(userInput domain.SignUpInput) (int, error)
 	GetUser(email, password string) (domain.User, error)
@@ -14,6 +16,7 @@ type Auth interface {
 	ParseToken(token string) (int, error)
 }
 
+// Tests interface is implemented by tests service.
 type Tests interface {
 	CreateTest(userID int, testInput domain.TestInput) (int, error)
 	GetTest(testID int) (domain.Test, error)
@@ -21,11 +24,13 @@ type Tests interface {
 	DeleteTestByID(testID int) error
 }
 
+// Service struct is composed of all services.
 type Service struct {
 	Auth
 	Tests
 }
 
+// NewService creates a new service with all services.
 func NewService(repo *repository.Repository) *Service {
 	return &Service{
 		Auth:  auth.NewServiceAuth(repo),

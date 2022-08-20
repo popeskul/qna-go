@@ -1,3 +1,4 @@
+// Package auth is a struct that contains all functions for the auth repository.
 package auth
 
 import (
@@ -8,11 +9,13 @@ import (
 	"github.com/popeskul/qna-go/internal/repository/queries"
 )
 
+// RepositoryAuth provides all the functions to execute the queries and transactions.
 type RepositoryAuth struct {
 	db *sql.DB
 	*queries.Queries
 }
 
+// NewRepoAuth returns a new instance of the repository.
 func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 	return &RepositoryAuth{
 		db:      db,
@@ -20,6 +23,8 @@ func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 	}
 }
 
+// CreateUser creates a new user in the database.
+// Returns the user and an error if any.
 func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 	var userID int
 
@@ -35,6 +40,8 @@ func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 	return userID, err
 }
 
+// GetUser returns a user from the database.
+// Returns the user and an error if any.
 func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 	var user domain.User
 
@@ -47,6 +54,8 @@ func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 	return user, nil
 }
 
+// DeleteUserById deletes a user from the database.
+// Returns an error if any.
 func (r *RepositoryAuth) DeleteUserById(userID int) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")

@@ -5,17 +5,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// errorResponse - response for error
+// errorResponse is the error response
+// It contains the error message
 type errorResponse struct {
 	Message string `json:"message"`
 }
 
-// statusResponse - response for status
+// statusResponse is the response for status
+// It contains the status of the service
+// It's used to check the status of the service
 type statusResponse struct {
 	Status string `json:"status"`
 }
 
-// newErrorResponse - create new error response
+// newErrorResponse creates a new error response
+// It logs the error and returns a new error response
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
 	logrus.Error(message)
 	c.AbortWithStatusJSON(statusCode, errorResponse{message})

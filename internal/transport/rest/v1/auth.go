@@ -1,3 +1,4 @@
+// Package v1 defines the handlers for the 1 version.
 package v1
 
 import (
@@ -7,11 +8,13 @@ import (
 	"net/http"
 )
 
+// Auth interface is implemented by the service.
 type Auth interface {
 	SignUp(ctx context.Context, user domain.SignUpInput) error
 	SignIn(ctx context.Context, user domain.SignInInput) (domain.User, error)
 }
 
+// InitAuthRouter initializes all the auth handlers.
 func (h *Handlers) InitAuthRouter(v1 *gin.RouterGroup) {
 	usersAPI := v1.Group("/auth")
 	{

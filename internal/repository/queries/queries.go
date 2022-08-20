@@ -7,10 +7,12 @@ import (
 	"database/sql"
 )
 
+// Queries is a struct that contains the queries for the repository.
 type Queries struct {
 	DB *sql.DB
 }
 
+// NewQueries returns a new instance of the queries.
 func NewQueries(db *sql.DB) *Queries {
 	return &Queries{
 		DB: db,
