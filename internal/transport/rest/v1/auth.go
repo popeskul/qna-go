@@ -1,10 +1,17 @@
+// Package v1 defines the handlers for the 1 version.
 package v1
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
 )
+
+type Auth interface {
+	SignUp(ctx context.Context, user domain.SignUpInput) error
+	SignIn(ctx context.Context, user domain.SignInInput) (domain.User, error)
+}
 
 type SignInResponse struct {
 	Status string `json:"status"`

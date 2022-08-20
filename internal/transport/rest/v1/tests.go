@@ -1,12 +1,22 @@
+// Package v1 defines the handlers for the 1 version.
 package v1
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
 	"strconv"
 )
+
+// Tests interface is implemented by the service.
+type Tests interface {
+	CreateTest(ctx context.Context, test domain.TestInput) error
+	GetTestByID(ctx context.Context, id int) (domain.Test, error)
+	UpdateTestByID(ctx context.Context, id int, test domain.TestInput) error
+	DeleteTestByID(ctx context.Context, id int) error
+}
 
 type getTestByIDResponse struct {
 	Status string      `json:"status"`
@@ -163,6 +173,10 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	c.JSON(http.StatusOK, statusResponse{"success"})
 }
 
+// getIdFromRequest gets the id from the request.
+// It's returns an error if the id is not a number.
+// If the id is not a number, it returns an error.
+// If the id is zero, it returns an error.
 func getIdFromRequest(r *gin.Context) (int, error) {
 	id, err := strconv.Atoi(r.Param("id"))
 	if err != nil {

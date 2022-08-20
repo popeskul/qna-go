@@ -9,6 +9,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/tests"
+	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
 	"path"
@@ -47,9 +48,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestServiceTests_CreateTest(t *testing.T) {
-	mockTest := domain.TestInput{
-		Title: "CreateTest 1",
-	}
+	u := randomTest()
 	mockUserID := 1
 
 	type args struct {
@@ -71,11 +70,11 @@ func TestServiceTests_CreateTest(t *testing.T) {
 			name: "Success: Create test",
 			args: args{
 				repo:   mockRepo,
-				input:  mockTest,
+				input:  u,
 				userID: mockUserID,
 			},
 			want: want{
-				title: mockTest.Title,
+				title: u.Title,
 			},
 		},
 		{
@@ -110,12 +109,8 @@ func TestServiceTests_CreateTest(t *testing.T) {
 }
 
 func TestServiceTests_UpdateTestById(t *testing.T) {
-	mockTest := domain.TestInput{
-		Title: "Service UpdateTestById 1",
-	}
 	mockUserID := 1
-
-	testID, err := mockRepo.CreateTest(mockUserID, mockTest)
+	testID, err := mockRepo.CreateTest(mockUserID, randomTest())
 	if err != nil {
 		t.Errorf("error creating test: %v", err)
 	}
@@ -144,7 +139,7 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 				userID: mockUserID,
 			},
 			want: want{
-				title: "Test title updated 2",
+				title: "Test title updated",
 			},
 		},
 		{
@@ -174,15 +169,11 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		helperDeleteTestByID(t, mockUserID)
 		helperDeleteTestByID(t, testID)
 	})
 }
 
 func TestServiceTests_DeleteTestById(t *testing.T) {
-	mockTest := domain.TestInput{
-		Title: "Service DeleteTestById 1",
-	}
 	mockUserID := 1
 
 	type args struct {
@@ -221,7 +212,7 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			testID, err := mockRepo.CreateTest(tt.args.userID, mockTest)
+			testID, err := mockRepo.CreateTest(tt.args.userID, randomTest())
 			if !reflect.DeepEqual(err, tt.want.err) {
 				t.Errorf("ServiceTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
@@ -235,6 +226,12 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 				helperDeleteTestByID(t, testID)
 			})
 		})
+	}
+}
+
+func randomTest() domain.TestInput {
+	return domain.TestInput{
+		Title: util.RandomString(10),
 	}
 }
 

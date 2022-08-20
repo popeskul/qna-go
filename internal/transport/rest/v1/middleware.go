@@ -1,3 +1,4 @@
+// Package v1 defines all middleware for the 1 version.
 package v1
 
 import (
@@ -14,13 +15,16 @@ const (
 	invalidAuthorizationHeader = "Authorization header is invalid"
 )
 
-type CtxValue int
-
 var (
 	ErrUserIsNotAuthorized = errors.New("user not authorized")
 	ErrUserIdNotFound      = errors.New("user id not found")
 )
 
+// authMiddleware is a middleware that authenticates the user.
+// If the user is not authenticated, the request is aborted with an error.
+// If the user is authenticated, the user id is stored in the context.
+// The user id is used in the handlers.
+// The user id is stored in the context to avoid passing it as a parameter.
 func (h *Handlers) authMiddleware(c *gin.Context) {
 	token, err := getTokenFromRequest(c.Request)
 	if err != nil {
@@ -39,6 +43,10 @@ func (h *Handlers) authMiddleware(c *gin.Context) {
 	c.Next()
 }
 
+// getTokenFromRequest extracts the token from the request.
+// The token is extracted from the Authorization header.
+// The token is expected to be in the format: Bearer <token>
+// If the token is not in the expected format, an error is returned.
 func getTokenFromRequest(r *http.Request) (string, error) {
 	header := r.Header.Get(authorizationHeader)
 	if header == "" {
@@ -57,6 +65,10 @@ func getTokenFromRequest(r *http.Request) (string, error) {
 	return headerParts[1], nil
 }
 
+// getUserId get the user id from the context.
+// If the user id is not found, an error is returned.
+// If the user id is zero, an error is returned.
+// If the user id is found, it is returned.
 func getUserId(c *gin.Context) (int, error) {
 	id, ok := c.Get("userId")
 

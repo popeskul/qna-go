@@ -1,3 +1,4 @@
+// Package tests is a struct that contains all functions for the test repository.
 package tests
 
 import (
@@ -6,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/queries"
 )
 
 var (
@@ -14,45 +16,46 @@ var (
 	ErrEmptyTitle        = errors.New("title is empty")
 )
 
+// RepositoryTests provides all the functions to execute the queries and transactions.
 type RepositoryTests struct {
 	db *sql.DB
+	*queries.Queries
 }
 
+// NewRepoTests creates a new instance of RepositoryTests.
 func NewRepoTests(db *sql.DB) *RepositoryTests {
 	return &RepositoryTests{
-		db: db,
+		db:      db,
+		Queries: queries.NewQueries(db),
 	}
 }
 
+// CreateTest creates a new test in the database.
 func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (int, error) {
-	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return 0, err
-	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
-		}
-	}(tx)
-
-	if inputTest.Title == "" {
-		return 0, ErrEmptyTitle
-	}
-
-	if authorID == 0 {
-		return 0, ErrTestAuthorIDEmpty
-	}
-
 	var id int
-	createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
-	if err = r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
-		return 0, err
-	}
 
-	return id, tx.Commit()
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
+		}
+
+		if authorID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
+
+		createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
+		if err := r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return id, err
 }
 
+// GetTest returns a test by id.
+// Returns the test and an error if any.
 func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	var test domain.Test
 	getTestQuery := fmt.Sprintln("SELECT * FROM tests WHERE id = $1")
@@ -63,54 +66,44 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	return test, nil
 }
 
+// UpdateTestById updates a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
 		}
-	}(tx)
 
-	if inputTest.Title == "" {
-		return ErrEmptyTitle
-	}
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
+		if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
+			return err
+		}
 
-	updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
-	if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }
 
+// DeleteTestById deletes a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) DeleteTestById(testID int) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			fmt.Println("failed to rollback transaction: ", err)
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
 		}
-	}(tx)
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
+		if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
+			return err
+		}
 
-	deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
-	if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }
