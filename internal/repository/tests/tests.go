@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/queries"
 )
 
 var (
@@ -16,36 +17,37 @@ var (
 
 type RepositoryTests struct {
 	db *sql.DB
+	*queries.Queries
 }
 
 func NewRepoTests(db *sql.DB) *RepositoryTests {
 	return &RepositoryTests{
-		db: db,
+		db:      db,
+		Queries: queries.NewQueries(db),
 	}
 }
 
 func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (int, error) {
-	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback() // nolint:errcheck
-
-	if inputTest.Title == "" {
-		return 0, ErrEmptyTitle
-	}
-
-	if authorID == 0 {
-		return 0, ErrTestAuthorIDEmpty
-	}
-
 	var id int
-	createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
-	if err = r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
-		return 0, err
-	}
 
-	return id, tx.Commit()
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
+		}
+
+		if authorID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
+
+		createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
+		if err := r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return id, err
 }
 
 func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
@@ -59,43 +61,39 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 }
 
 func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // nolint:errcheck
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
+		}
 
-	if inputTest.Title == "" {
-		return ErrEmptyTitle
-	}
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
+		if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
+			return err
+		}
 
-	updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
-	if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }
 
 func (r *RepositoryTests) DeleteTestById(testID int) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // nolint:errcheck
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
+		if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
+			return err
+		}
 
-	deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
-	if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }

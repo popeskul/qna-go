@@ -1,35 +1,38 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/queries"
 )
 
 type RepositoryAuth struct {
 	db *sql.DB
+	*queries.Queries
 }
 
 func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 	return &RepositoryAuth{
-		db: db,
+		db:      db,
+		Queries: queries.NewQueries(db),
 	}
 }
 
 func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback() // nolint:errcheck
+	var userID int
 
-	var id int
-	createUserQuery := fmt.Sprintln("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
-	if err = r.db.QueryRow(createUserQuery, u.Name, u.Email, u.Password).Scan(&id); err != nil {
-		return 0, err
-	}
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		createUserQuery := fmt.Sprintln("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
+		if err := r.db.QueryRow(createUserQuery, u.Name, u.Email, u.Password).Scan(&userID); err != nil {
+			return err
+		}
 
-	return id, tx.Commit()
+		return nil
+	})
+
+	return userID, err
 }
 
 func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
@@ -45,16 +48,14 @@ func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 }
 
 func (r *RepositoryAuth) DeleteUserById(userID int) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // nolint:errcheck
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")
+		if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
+			return err
+		}
 
-	deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")
-	if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }
