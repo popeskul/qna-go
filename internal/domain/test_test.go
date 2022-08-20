@@ -2,6 +2,7 @@ package domain
 
 import (
 	"github.com/go-playground/validator/v10"
+	"github.com/popeskul/qna-go/internal/util"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func Test_TestInput(t *testing.T) {
 		{
 			name: "valid",
 			fields: TestInput{
-				Title: "test",
+				Title: util.RandomString(10),
 			},
 			wantErr: false,
 		},

@@ -3,8 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
@@ -12,12 +19,10 @@ import (
 	"github.com/popeskul/qna-go/internal/server"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/transport/rest"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -26,16 +31,14 @@ const (
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	cfg, err := initConfig()
 	if err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
+		log.Fatalf("failed to init config: %v", err)
 	}
 
-	cfg, err := config.New(ConfigDir, ConfigFile)
-	if err != nil {
+	if err = runMigration(cfg); err != nil {
 		log.Fatal(err)
 	}
-	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
 	db, err := postgres.NewPostgresConnection(db.ConfigDB{
 		Host:     cfg.DB.Host,
@@ -82,4 +85,41 @@ func main() {
 	}
 
 	fmt.Println("Server stopped")
+}
+
+// initConfig reading from the .env file and environment variables.
+// If the .env file is not found and, it will use the default config.
+func initConfig() (*config.Config, error) {
+	if err := godotenv.Load(".env"); err != nil {
+		return nil, err
+	}
+
+	cfg, err := config.New(ConfigDir, ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+
+	return cfg, nil
+}
+
+// runMigration run the migration for the database.
+func runMigration(cfg *config.Config) error {
+	migrationPath := "file://schema"
+	dbConn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.DBName, cfg.DB.SSLMode)
+	m, err := migrate.New(migrationPath, dbConn)
+	if err != nil {
+		return err
+	}
+	if err = m.Up(); err != nil {
+		// because of the way up and down works, we need to check for the ErrNoChange error
+		// without this check, the application will panic if the database is already up-to-date
+		if err == migrate.ErrNoChange {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }

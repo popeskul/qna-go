@@ -1,3 +1,7 @@
+// Package config contains configuration for the application
+// Config is loaded from environment variables and viper config file
+// Config is used by the application to connect to the database
+// Config is used by the application to configure the application
 package config
 
 import (
@@ -5,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config represents application config
 type Config struct {
 	DB     Postgres
 	Server struct {
@@ -12,6 +17,7 @@ type Config struct {
 	} `mapstructure:"server"`
 }
 
+// Postgres represents postgres config
 type Postgres struct {
 	Host     string
 	Port     int
@@ -21,6 +27,8 @@ type Postgres struct {
 	SSLMode  string
 }
 
+// New loads config from environment variables and viper config file
+// Returns Config struct and error if any
 func New(folder, filename string) (*Config, error) {
 	cfg := &Config{}
 

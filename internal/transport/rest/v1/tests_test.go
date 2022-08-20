@@ -3,9 +3,9 @@ package v1
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/util"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -13,14 +13,8 @@ import (
 )
 
 func TestHandlers_CreateTests(t *testing.T) {
-	user := domain.SignUpInput{
-		Email:    "TestHandlers_CreateTests@mail.com",
-		Password: "TestHandlers_CreateTests",
-	}
-
-	test := domain.TestInput{
-		Title: "TestHandlers_CreateTests",
-	}
+	user := randomUser()
+	test := randomTest()
 
 	userID, err := mockServices.Auth.CreateUser(user)
 	if err != nil {
@@ -32,7 +26,7 @@ func TestHandlers_CreateTests(t *testing.T) {
 		t.Errorf("error generating token: %v", err)
 	}
 
-	validJSON := []byte(`{"title": "` + test.Title + `"}`)
+	validJSON, _ := json.Marshal(test)
 	badJSON := []byte(`bad request`)
 
 	tests := []struct {
@@ -65,32 +59,30 @@ func TestHandlers_CreateTests(t *testing.T) {
 				t.Cleanup(func() {
 					if w.Code == http.StatusCreated {
 						var obj map[string]interface{}
-						if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
+						if err = json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
 							t.Errorf("error unmarshalling response: %v", err)
 						}
 
-						testID := int(obj["id"].(float64))
-
-						helperDeleteTestByID(t, testID)
+						if obj["id"] != nil {
+							testID := int(obj["id"].(float64))
+							helperDeleteTestByID(t, testID)
+						}
 					}
 				})
 				return w.Code == tt.status
-
 			})
 		})
 	}
 
 	t.Cleanup(func() {
-		fmt.Println("cleanup")
 		helperDeleteUserByID(t, userID)
 	})
 }
 
 func TestHandlers_GetTest(t *testing.T) {
-	user := domain.SignUpInput{
-		Email:    "TestHandlers_GetTest@mail.com",
-		Password: "1231",
-	}
+	user := randomUser()
+	test := randomTest()
+
 	userID, err := mockServices.Auth.CreateUser(user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
@@ -101,11 +93,7 @@ func TestHandlers_GetTest(t *testing.T) {
 		t.Errorf("error generating token: %v", err)
 	}
 
-	test := domain.TestInput{
-		Title: "TestHandlers_GetTest",
-	}
-
-	testID, err := mockRepo.CreateTest(1, test)
+	testID, err := mockRepo.CreateTest(userID, test)
 	if err != nil {
 		t.Errorf("error creating test: %v", err)
 	}
@@ -150,25 +138,19 @@ func TestHandlers_GetTest(t *testing.T) {
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				var obj map[string]interface{}
-				if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
+				if err = json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
 					t.Errorf("error unmarshalling response: %v", err)
 				}
 
-				status := obj["status"].(string)
-				if status != "success" {
-					t.Errorf("error getting test: %v", status)
+				resTest := obj["test"].(map[string]interface{})
+				if id := int(resTest["id"].(float64)); id != tt.want.test.ID {
+					t.Errorf("error getting test: %v", resTest["id"])
 				}
 
-				resTest := obj["test"].(map[string]interface{})
 				resTestID := int(resTest["id"].(float64))
 				resTestTitle := resTest["title"].(string)
-				fmt.Println("resTestID: ", resTestID, "resTestTitle: ", resTestTitle)
 
-				if testID != tt.want.test.ID {
-					t.Errorf("error getting test: %v", testID)
-				}
-
-				if test.Title != resTestTitle {
+				if resTestTitle != tt.want.test.Title {
 					t.Errorf("error getting test: %v", test.Title)
 				}
 
@@ -190,10 +172,7 @@ func TestHandlers_GetTest(t *testing.T) {
 }
 
 func TestHandlers_UpdateTestByID(t *testing.T) {
-	user := domain.SignUpInput{
-		Email:    "ad2@mail.com",
-		Password: "ad",
-	}
+	user := randomUser()
 
 	userID, err := mockServices.Auth.CreateUser(user)
 	if err != nil {
@@ -201,13 +180,16 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 	}
 
 	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	if err != nil {
+		t.Errorf("error generating token: %v", err)
+	}
 
-	newTitle := "title1"
+	newTitle := util.RandomString(10)
 	validJSON := []byte(`{"title": "` + newTitle + `"}`)
 	badJSON := []byte(`bad request`)
 
-	testIDZero := helperCreateTest(t, userID, domain.TestInput{Title: "title0"})
-	testID := helperCreateTest(t, userID, domain.TestInput{Title: "title1"})
+	testIDZero := helperCreateTest(t, userID, randomTest())
+	testID := helperCreateTest(t, userID, randomTest())
 
 	type args struct {
 		id    int
@@ -291,6 +273,9 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 	}
 
 	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	if err != nil {
+		t.Errorf("error generating token: %v", err)
+	}
 
 	type args struct {
 		token string
@@ -347,29 +332,4 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
 	})
-}
-
-func helperCreateTest(t *testing.T, userID int, test domain.TestInput) int {
-	t.Helper()
-
-	var id int
-	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, userID).Scan(&id); err != nil {
-		t.Errorf("error inserting test: %v", err)
-	}
-
-	return id
-}
-
-func helperDeleteTestByID(t *testing.T, id int) {
-	t.Helper()
-	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {
-		t.Errorf("error deleting test: %v", err)
-	}
-}
-
-func helperDeleteUserByID(t *testing.T, id int) {
-	t.Helper()
-	if _, err := mockDB.Exec("DELETE FROM users WHERE id = $1", id); err != nil {
-		t.Errorf("error deleting user: %v", err)
-	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
 	"path"
@@ -16,15 +17,11 @@ import (
 )
 
 func TestRepositoryAuth_CreateUser(t *testing.T) {
-	mockSimpleEmail := "testting1@test.com"
-	mockUniqueEmail := "test_unique_email@mail.com"
-	mockPassword := "12345"
-
-	userID, _ := mockRepo.CreateUser(domain.SignUpInput{
-		Email:    mockUniqueEmail,
-		Password: mockPassword,
-		Name:     "test",
-	})
+	u := randomUser()
+	userID, err := mockRepo.CreateUser(u)
+	if err != nil {
+		t.Error(err)
+	}
 
 	type fields struct {
 		repo *RepositoryAuth
@@ -44,11 +41,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 				repo: mockRepo,
 			},
 			args: args{
-				u: domain.SignUpInput{
-					Name:     "John Doe",
-					Email:    mockSimpleEmail,
-					Password: "encrypted_password",
-				},
+				u: randomUser(),
 			},
 			wantErr: false,
 		},
@@ -59,8 +52,8 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 			},
 			args: args{
 				u: domain.SignUpInput{
-					Name:  "John Doe",
-					Email: mockUniqueEmail,
+					Name:  util.RandomString(10),
+					Email: u.Email,
 				},
 			},
 			wantErr: true,
@@ -82,20 +75,15 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		if err := mockRepo.DeleteUserById(userID); err != nil {
+		if err = mockRepo.DeleteUserById(userID); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
 func TestRepositoryAuth_GetUser(t *testing.T) {
-	mockEmail := "testting2@test.com"
-	mockPassword := "12345"
-	userId, err := mockRepo.CreateUser(domain.SignUpInput{
-		Name:     "John Doe",
-		Email:    mockEmail,
-		Password: mockPassword,
-	})
+	u := randomUser()
+	userId, err := mockRepo.CreateUser(u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,8 +107,8 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 				repo: mockRepo,
 			},
 			args: args{
-				email:    mockEmail,
-				password: mockPassword,
+				email:    u.Email,
+				password: u.Password,
 			},
 			want: userId,
 		},
@@ -136,17 +124,11 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 			if got.ID != tt.want {
 				t.Errorf("RepositoryAuth.GetUser() = %v, want %v", got.ID, tt.want)
 			}
-
-			t.Cleanup(func() {
-				if err != nil {
-					helperDeleteUserByID(t, got.ID)
-				}
-			})
 		})
 	}
 
 	t.Cleanup(func() {
-		if err := mockRepo.DeleteUserById(userId); err != nil {
+		if err = mockRepo.DeleteUserById(userId); err != nil {
 			t.Error(err)
 		}
 	})
@@ -205,6 +187,14 @@ func TestRepositoryAuth_DeleteUserById(t *testing.T) {
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userId)
 	})
+}
+
+func randomUser() domain.SignUpInput {
+	return domain.SignUpInput{
+		Name:     util.RandomString(10),
+		Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+		Password: util.RandomString(10),
+	}
 }
 
 func helperDeleteUserByID(t *testing.T, id int) {

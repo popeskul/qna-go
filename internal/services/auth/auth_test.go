@@ -10,6 +10,7 @@ import (
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
 	"path"
@@ -19,11 +20,9 @@ import (
 )
 
 var (
-	dbConn          *sql.DB
-	repo            *repository.Repository
-	mockEmail       = "TestServiceAuth_CreateUser@example.com"
-	mockUniqueEmail = "test_unique_email@mail.com"
-	mockPassword    = "12345"
+	mockDB      *sql.DB
+	mockRepo    *repository.Repository
+	mockService *ServiceAuth
 )
 
 func TestMain(m *testing.M) {
@@ -37,30 +36,20 @@ func TestMain(m *testing.M) {
 	}
 
 	db, err := newDBConnection(cfg)
-	dbConn = db
+	mockDB = db
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
-	defer dbConn.Close()
+	defer mockDB.Close()
 
-	repo = repository.NewRepository(dbConn)
+	mockRepo = repository.NewRepository(mockDB)
+	mockService = NewServiceAuth(mockRepo)
 
 	os.Exit(m.Run())
 }
 
 func TestServiceAuth_CreateUser(t *testing.T) {
-	// Create seed user for testing duplicate email
-	_, err := repo.GetUser(mockUniqueEmail, mockPassword)
-	if err != nil {
-		_, err = repo.CreateUser(domain.SignUpInput{
-			Email:    mockUniqueEmail,
-			Password: mockPassword,
-			Name:     "test",
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
+	u := randomUser()
 
 	type fields struct {
 		repo *repository.Repository
@@ -77,26 +66,20 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 		{
 			name: "CreateUser",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
-				input: domain.SignUpInput{
-					Email:    mockEmail,
-					Password: mockPassword,
-				},
+				input: u,
 			},
 			err: nil,
 		},
 		{
 			name: "CreateUser_DuplicateEmail",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
-				input: domain.SignUpInput{
-					Email:    mockUniqueEmail,
-					Password: mockPassword,
-				},
+				input: u,
 			},
 			err: errors.New("duplicate key value violates unique constraint"),
 		},
@@ -104,29 +87,23 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServiceAuth(tt.fields.repo)
-			_, err = s.CreateUser(tt.args.input)
+			userID, err := NewServiceAuth(tt.fields.repo).CreateUser(tt.args.input)
 			if err != nil {
-				if strings.Contains(tt.err.Error(), err.Error()) {
+				if !strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
 				}
 			}
 
 			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2, $3)", tt.args.input.Email, mockUniqueEmail, mockEmail)
-				if err != nil {
-					t.Error(err)
-				}
+				helperDeleteUserByID(t, userID)
 			})
 		})
 	}
 }
 
 func TestServiceAuth_GetUser(t *testing.T) {
-	_, err := repo.CreateUser(domain.SignUpInput{
-		Email:    mockEmail,
-		Password: mockPassword,
-	})
+	u := randomUser()
+	userID, err := mockRepo.CreateUser(u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -147,25 +124,25 @@ func TestServiceAuth_GetUser(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
-				email:    mockEmail,
-				password: mockPassword,
+				email:    u.Email,
+				password: u.Password,
 			},
 			want: &domain.User{
-				Email:             mockEmail,
-				EncryptedPassword: mockPassword,
+				Email:             u.Email,
+				EncryptedPassword: u.Password,
 			},
 		},
 		{
 			name: "fail",
 			fields: fields{
-				repo: repo,
+				repo: mockRepo,
 			},
 			args: args{
-				email:    "bad@mail.com",
-				password: mockPassword,
+				email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+				password: util.RandomString(10),
 			},
 			want: nil,
 		},
@@ -181,61 +158,45 @@ func TestServiceAuth_GetUser(t *testing.T) {
 					t.Errorf("ServiceAuth.GetUser() error = %v, wantErr %v", err, tt.want)
 				}
 			}
-
-			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email IN ($1, $2)", tt.args.email, mockEmail)
-				if err != nil {
-					t.Error(err)
-				}
-			})
 		})
 	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userID)
+	})
 }
 
 func TestServiceAuth_GenerateToken(t *testing.T) {
-	mockUser := domain.User{
-		Email:             mockEmail,
-		EncryptedPassword: mockPassword,
+	u := randomUser()
+	userID, err := mockService.CreateUser(u)
+	if err != nil {
+		t.Error(err)
 	}
 
-	service := NewServiceAuth(repo)
-
-	_, _ = service.CreateUser(domain.SignUpInput{
-		Email:    mockUser.Email,
-		Password: mockUser.EncryptedPassword,
-	})
-
-	type fields struct {
-		repo *repository.Repository
-	}
 	type args struct {
-		user *domain.User
+		user domain.SignInInput
 	}
 	tests := []struct {
 		name      string
-		fields    fields
 		args      args
 		wantError error
 	}{
 		{
 			name: "success",
-			fields: fields{
-				repo: repository.NewRepository(dbConn),
-			},
 			args: args{
-				user: &mockUser,
+				user: domain.SignInInput{
+					Email:    u.Email,
+					Password: u.Password,
+				},
 			},
 			wantError: nil,
 		},
 		{
 			name: "fail",
-			fields: fields{
-				repo: repository.NewRepository(dbConn),
-			},
 			args: args{
-				user: &domain.User{
-					Email:             "wrong@mail.com",
-					EncryptedPassword: "asd123",
+				user: domain.SignInInput{
+					Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+					Password: util.RandomString(10),
 				},
 			},
 			wantError: errors.New("sql: no rows in result set"),
@@ -244,29 +205,45 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServiceAuth(tt.fields.repo)
-			_, err := s.GenerateToken(tt.args.user.Email, tt.args.user.EncryptedPassword)
+			_, err = mockService.GenerateToken(tt.args.user.Email, tt.args.user.Password)
 
 			if err != nil && tt.wantError != nil {
 				if !strings.Contains(err.Error(), tt.wantError.Error()) {
 					t.Errorf("ServiceAuth.GenerateToken() error = %v, wantErr = %v", err, tt.wantError)
 				}
 			}
-
-			t.Cleanup(func() {
-				_, err = dbConn.Exec("DELETE FROM users WHERE email = $1", tt.args.user.Email)
-				if err != nil {
-					t.Error(err)
-				}
-			})
 		})
 	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userID)
+	})
 }
 
 func TestServiceAuth_generatePassword(t *testing.T) {
-	token := generatePasswordHash(mockPassword)
+	token, err := generatePasswordHash(util.RandomString(10))
+	if err != nil {
+		t.Error(err)
+	}
 	if token == "" {
 		t.Error("token is empty")
+	}
+}
+
+func helperDeleteUserByID(t *testing.T, userID int) {
+	t.Helper()
+
+	_, err := mockDB.Exec("DELETE FROM users WHERE id = $1", userID)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func randomUser() domain.SignUpInput {
+	return domain.SignUpInput{
+		Name:     util.RandomString(10),
+		Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+		Password: util.RandomString(10),
 	}
 }
 

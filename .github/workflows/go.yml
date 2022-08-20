@@ -1,13 +1,8 @@
 name: qna
 
-on:
-  push:
-    branches: [ tests ]
-  pull_request:
-    branches: [ tests ]
+on: push
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest

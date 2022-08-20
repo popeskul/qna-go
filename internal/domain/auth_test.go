@@ -2,6 +2,7 @@ package domain
 
 import (
 	"github.com/go-playground/validator/v10"
+	"github.com/popeskul/qna-go/internal/util"
 	"testing"
 )
 
@@ -16,9 +17,9 @@ func Test_SignUpInput(t *testing.T) {
 		{
 			name: "valid",
 			fields: SignUpInput{
-				Name:     "John Doe",
-				Email:    "test@mail.com",
-				Password: "password",
+				Name:     util.RandomString(10),
+				Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+				Password: util.RandomString(10),
 			},
 			wantErr: false,
 		},
@@ -26,8 +27,8 @@ func Test_SignUpInput(t *testing.T) {
 			name: "invalid name, with min length",
 			fields: SignUpInput{
 				Name:     "",
-				Email:    "test@mail.com",
-				Password: "password",
+				Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+				Password: util.RandomString(10),
 			},
 			wantErr: true,
 		},
@@ -35,34 +36,34 @@ func Test_SignUpInput(t *testing.T) {
 			name: "invalid name with min length",
 			fields: SignUpInput{
 				Name:     "",
-				Email:    "test@mail.com",
-				Password: "password",
+				Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+				Password: util.RandomString(10),
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid name with max length",
 			fields: SignUpInput{
-				Name:     "of15XzFMJ0CDkVBGf5bhjqXM5SgN3IVLE3L5f2n2t6S13w2WmaGER1d5brKxLLWiODCbpvQKZzmX8L5vHAiZ7KXnuJnNB5BT74irP1yoKJ2JKWDK2l1NgHAa63Ewu0OWg86GuFoNql6pRradtW10AOUsDSFwE8rqLIo3GWjy3UNPxCI606A52gF1pKUQRnnWtCMbwKnufvs2LdijZbkFNuurtY3jTQ3CHHjaph5GBAVffJhJw8RMTVI3NnywnzEz",
-				Email:    "test@mail.com",
-				Password: "password",
+				Name:     util.RandomString(256),
+				Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
+				Password: util.RandomString(10),
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid email",
 			fields: SignUpInput{
-				Name:     "12345",
+				Name:     util.RandomString(10),
 				Email:    "",
-				Password: "password",
+				Password: util.RandomString(10),
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid password with min length",
 			fields: SignUpInput{
-				Name:     "12345",
-				Email:    "test@mail.com",
+				Name:     util.RandomString(10),
+				Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
 				Password: "",
 			},
 			wantErr: true,

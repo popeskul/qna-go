@@ -2,16 +2,13 @@ package tests
 
 import (
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/util"
 	"testing"
 )
 
 func TestRepositoryTests_CreateTest(t *testing.T) {
-	mockUniqueTest := domain.TestInput{
-		Title: "CreateTest 1",
-	}
 	mockUserID := 1
-
-	uniqueID := helperCreateTest(t, mockUniqueTest.Title, mockUserID)
+	testID := helperCreateTest(t, randomTest(), 1)
 
 	type args struct {
 		repo   *RepositoryTests
@@ -31,14 +28,12 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 		{
 			name: "Success: create test",
 			args: args{
-				repo: mockRepo,
-				input: domain.TestInput{
-					Title: mockUniqueTest.Title,
-				},
+				repo:   mockRepo,
+				input:  randomTest(),
 				userID: mockUserID,
 			},
 			want: want{
-				id:  uniqueID + 1,
+				id:  testID + 1,
 				err: nil,
 			},
 		},
@@ -72,15 +67,13 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		helperDeleteTest(t, uniqueID)
+		helperDeleteTest(t, testID)
 	})
 }
 
 func TestRepositoryTests_UpdateTestById(t *testing.T) {
-	mockTestTitle := "Repo UpdateTestById 1"
 	mockTestAuthorID := 1
-
-	createdID := helperCreateTest(t, mockTestTitle, mockTestAuthorID)
+	createdID := helperCreateTest(t, randomTest(), mockTestAuthorID)
 
 	type args struct {
 		repo   *RepositoryTests
@@ -147,8 +140,8 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 }
 
 func TestRepositoryTests_DeleteTestById(t *testing.T) {
-	userIDZero := helperCreateTest(t, "Repo DeleteTestById 1", 1)
-	userID := helperCreateTest(t, "DeleteTestById 2", 2)
+	userIDZero := helperCreateTest(t, randomTest(), 1)
+	userID := helperCreateTest(t, randomTest(), 2)
 
 	type args struct {
 		repo   *RepositoryTests
@@ -199,6 +192,12 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 	})
 }
 
+func randomTest() domain.TestInput {
+	return domain.TestInput{
+		Title: util.RandomString(10),
+	}
+}
+
 func helperDeleteTest(t *testing.T, id int) {
 	t.Helper()
 	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {
@@ -206,10 +205,10 @@ func helperDeleteTest(t *testing.T, id int) {
 	}
 }
 
-func helperCreateTest(t *testing.T, title string, authorID int) int {
+func helperCreateTest(t *testing.T, test domain.TestInput, authorID int) int {
 	t.Helper()
 	var id int
-	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", title, authorID).Scan(&id); err != nil {
+	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {
 		t.Errorf("error creating test: %v", err)
 	}
 	return id

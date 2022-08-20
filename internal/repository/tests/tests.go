@@ -1,10 +1,13 @@
+// Package tests is a struct that contains all functions for the test repository.
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/queries"
 )
 
 var (
@@ -13,43 +16,49 @@ var (
 	ErrEmptyTitle        = errors.New("title is empty")
 )
 
+// RepositoryTests provides all the functions to execute the queries and transactions.
 type RepositoryTests struct {
 	db *sql.DB
+	*queries.Queries
 }
 
+// NewRepoTests creates a new instance of RepositoryTests.
 func NewRepoTests(db *sql.DB) *RepositoryTests {
 	return &RepositoryTests{
-		db: db,
+		db:      db,
+		Queries: queries.NewQueries(db),
 	}
 }
 
+// CreateTest creates a new test in the database.
 func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (int, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
-
-	if inputTest.Title == "" {
-		return 0, ErrEmptyTitle
-	}
-
-	if authorID == 0 {
-		return 0, ErrTestAuthorIDEmpty
-	}
-
 	var id int
-	createTestQuery := fmt.Sprintf("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
-	if err = r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
-		return 0, err
-	}
 
-	return id, tx.Commit()
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
+		}
+
+		if authorID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
+
+		createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
+		if err := r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return id, err
 }
 
+// GetTest returns a test by id.
+// Returns the test and an error if any.
 func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	var test domain.Test
-	getTestQuery := fmt.Sprintf("SELECT * FROM tests WHERE id = $1")
+	getTestQuery := fmt.Sprintln("SELECT * FROM tests WHERE id = $1")
 	if err := r.db.QueryRow(getTestQuery, testID).Scan(&test.ID, &test.Title, &test.AuthorID, &test.CreatedAt, &test.UpdatedAt); err != nil {
 		return domain.Test{}, err
 	}
@@ -57,46 +66,44 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 	return test, nil
 }
 
+// UpdateTestById updates a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if inputTest.Title == "" {
+			return ErrEmptyTitle
+		}
 
-	if inputTest.Title == "" {
-		return ErrEmptyTitle
-	}
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
+		if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
+			return err
+		}
 
-	updateTestQuery := fmt.Sprintf("UPDATE tests SET title = $1 WHERE id = $2")
-	if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
-		return err
-	}
+		return nil
+	})
 
-	return tx.Commit()
+	return err
 }
 
+// DeleteTestById deletes a test by id.
+// Returns an error if any.
 func (r *RepositoryTests) DeleteTestById(testID int) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
+	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+		if testID == 0 {
+			return ErrTestAuthorIDEmpty
+		}
 
-	fmt.Println("testID: ", testID)
-	defer tx.Rollback()
+		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
+		if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
+			return err
+		}
 
-	if testID == 0 {
-		return ErrTestAuthorIDEmpty
-	}
+		return nil
+	})
 
-	deleteTestQuery := fmt.Sprintf("DELETE FROM tests WHERE id = $1")
-	if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return err
 }
