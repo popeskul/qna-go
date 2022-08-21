@@ -4,11 +4,9 @@ package v1
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
-	"strconv"
 )
 
 // Tests interface is implemented by the service.
@@ -17,6 +15,10 @@ type Tests interface {
 	GetTestByID(ctx context.Context, id int) (domain.Test, error)
 	UpdateTestByID(ctx context.Context, id int, test domain.TestInput) error
 	DeleteTestByID(ctx context.Context, id int) error
+}
+
+type getTestByIDRequest struct {
+	ID int `uri:"id" binding:"required,min=1"`
 }
 
 type getTestByIDResponse struct {
@@ -56,13 +58,13 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
+	var request getTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	test, err := h.service.Tests.GetTest(c, testID)
+	test, err := h.service.Tests.GetTest(c, request.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			newErrorResponse(c, http.StatusNotFound, "test not found")
@@ -84,11 +86,16 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
+	var request getTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	//testID, err := getIdFromRequest(c)
+	//if err != nil {
+	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
+	//	return
+	//}
 
 	var test domain.TestInput
 	if err := c.ShouldBindJSON(&test); err != nil {
@@ -96,7 +103,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.UpdateTestByID(c, testID, test); err != nil {
+	if err := h.service.Tests.UpdateTestByID(c, request.ID, test); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -110,34 +117,16 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var request getTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err = h.service.Tests.DeleteTestByID(c, testID); err != nil {
+	if err := h.service.Tests.DeleteTestByID(c, request.ID); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, statusResponse{"success"})
-}
-
-// getIdFromRequest gets the id from the request.
-// It's returns an error if the id is not a number.
-// If the id is not a number, it returns an error.
-// If the id is zero, it returns an error.
-func getIdFromRequest(r *gin.Context) (int, error) {
-	id, err := strconv.Atoi(r.Param("id"))
-	if err != nil {
-		return 0, err
-	}
-
-	if id == 0 {
-		return 0, errors.New("id can't be 0")
-	}
-
-	return id, nil
 }
