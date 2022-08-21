@@ -14,13 +14,14 @@ type Auth interface {
 	SignIn(ctx context.Context, user domain.SignInInput) (domain.User, error)
 }
 
-// InitAuthRouter initializes all the auth handlers.
-func (h *Handlers) InitAuthRouter(v1 *gin.RouterGroup) {
-	usersAPI := v1.Group("/auth")
-	{
-		usersAPI.POST("/sign-up", h.SignUp)
-		usersAPI.POST("/sign-in", h.SignIn)
-	}
+type SignInResponse struct {
+	Status string `json:"status"`
+	Token  string `json:"token"`
+}
+
+type SignUpResponse struct {
+	Status string `json:"status"`
+	ID     int    `json:"id"`
 }
 
 func (h *Handlers) SignUp(c *gin.Context) {
@@ -36,9 +37,9 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
-		"id":     id,
+	c.JSON(http.StatusCreated, SignUpResponse{
+		Status: "success",
+		ID:     id,
 	})
 }
 
@@ -55,8 +56,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"token":  token,
+	c.JSON(http.StatusOK, SignInResponse{
+		Status: "success",
+		Token:  token,
 	})
 }

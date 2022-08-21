@@ -18,15 +18,9 @@ type Tests interface {
 	DeleteTestByID(ctx context.Context, id int) error
 }
 
-// InitTestsRouter initializes all the routes for the tests.
-func (h *Handlers) InitTestsRouter(v1 *gin.RouterGroup) {
-	testsAPI := v1.Group("/tests", h.authMiddleware)
-	{
-		testsAPI.POST("/", h.CreateTest)
-		testsAPI.GET("/:id", h.GetTestByID)
-		testsAPI.PUT("/:id", h.UpdateTestByID)
-		testsAPI.DELETE("/:id", h.DeleteTestByID)
-	}
+type getTestByIDResponse struct {
+	Status string      `json:"status"`
+	Test   domain.Test `json:"test"`
 }
 
 func (h *Handlers) CreateTest(c *gin.Context) {
@@ -73,9 +67,9 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"test":   test,
+	c.JSON(http.StatusOK, getTestByIDResponse{
+		Status: "success",
+		Test:   test,
 	})
 }
 
