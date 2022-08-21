@@ -231,9 +231,117 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 	}
 }
 
+func TestServiceTests_GetAllTests(t *testing.T) {
+	ctx := context.Background()
+	userID := 1
+
+	type args struct {
+		repo             *repository.Repository
+		CreateByQuantity int
+		params           domain.GetAllTestsParams
+	}
+	type want struct {
+		CreatedByQuantity int
+	}
+
+	tests := []struct {
+		name string
+		args struct {
+			repo             *repository.Repository
+			CreateByQuantity int
+			params           domain.GetAllTestsParams
+		}
+		want struct {
+			CreatedByQuantity int
+		}
+	}{
+		{
+			name: "Success: get all tests (3)",
+			args: args{
+				repo:             mockRepo,
+				CreateByQuantity: 3,
+				params: domain.GetAllTestsParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			},
+			want: want{
+				CreatedByQuantity: 3,
+			},
+		},
+		{
+			name: "Success: get all tests from empty DB",
+			args: args{
+				repo:             mockRepo,
+				CreateByQuantity: 0,
+			},
+			want: want{
+				CreatedByQuantity: 0,
+			},
+		},
+		{
+			name: "Success: get all tests from DB with limit",
+			args: args{
+				repo:             mockRepo,
+				CreateByQuantity: 5,
+				params: domain.GetAllTestsParams{
+					Limit:  3,
+					Offset: 4,
+				},
+			},
+			want: want{
+				CreatedByQuantity: 1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			createdIDs := make([]int, tt.args.CreateByQuantity)
+
+			for i := 0; i < tt.args.CreateByQuantity; i++ {
+				testID := helperCreateTest(t, userID, randomTest())
+				createdIDs = append(createdIDs, testID)
+			}
+
+			allTests, err := tt.args.repo.GetAllTestsByCurrentUser(ctx, userID, tt.args.params)
+			if err != nil {
+				t.Errorf("RepositoryTests.GetAllTests() error = %v", err)
+			}
+
+			// check count of tests
+			if len(allTests) != tt.want.CreatedByQuantity {
+				t.Errorf("RepositoryTests.GetAllTests() error = %v, wantErr %v", len(allTests), tt.want.CreatedByQuantity)
+			}
+
+			t.Cleanup(func() {
+				for _, testID := range createdIDs {
+					helperDeleteTest(t, testID)
+				}
+			})
+		})
+	}
+}
+
 func randomTest() domain.TestInput {
 	return domain.TestInput{
 		Title: util.RandomString(10),
+	}
+}
+
+func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
+	t.Helper()
+	var id int
+	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {
+		t.Errorf("error creating test: %v", err)
+	}
+	return id
+}
+
+func helperDeleteTest(t *testing.T, id int) {
+	t.Helper()
+	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {
+		t.Errorf("error deleting test: %v", err)
 	}
 }
 

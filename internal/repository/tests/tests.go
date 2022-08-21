@@ -14,6 +14,7 @@ var (
 	ErrDuplicateAuthorID = errors.New("pq: duplicate key value violates unique constraint \"tests_author_id_key\"")
 	ErrTestAuthorIDEmpty = errors.New("author id is empty")
 	ErrEmptyTitle        = errors.New("title is empty")
+	ErrEmptyRepository   = errors.New("repository is empty")
 )
 
 // RepositoryTests provides all the functions to execute the queries and transactions.
@@ -64,6 +65,29 @@ func (r *RepositoryTests) GetTest(ctx context.Context, testID int) (domain.Test,
 	}
 
 	return test, nil
+}
+
+// GetAllTestsByCurrentUser get all test from db by user id.
+// It's return []domain.Test and error if any.
+func (r *RepositoryTests) GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error) {
+	allTests := make([]domain.Test, 0)
+	allTestsQuery := fmt.Sprintf("SELECT * FROM tests WHERE author_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3")
+
+	rows, err := r.db.QueryContext(ctx, allTestsQuery, userID, args.Limit, args.Offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var t domain.Test
+	for rows.Next() {
+		if err = rows.Scan(&t.ID, &t.Title, &t.AuthorID, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, err
+		}
+		allTests = append(allTests, t)
+	}
+	err = rows.Err()
+
+	return allTests, err
 }
 
 // UpdateTestById updates a test by id.

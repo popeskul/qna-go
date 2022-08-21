@@ -74,8 +74,7 @@ func randomTest() domain.TestInput {
 	}
 }
 
-func helperCreatUser(t *testing.T, user domain.SignUpInput) int {
-	ctx := context.Background()
+func helperCreatUser(t *testing.T, ctx context.Context, user domain.SignUpInput) int {
 	id, err := mockServices.CreateUser(ctx, user)
 	if err != nil {
 		t.Fatalf("Some error occured. Err: %mockServices", err)
