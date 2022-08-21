@@ -3,6 +3,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository/auth"
@@ -11,17 +12,17 @@ import (
 
 // Auth interface is implemented by the auth repository.
 type Auth interface {
-	CreateUser(userInput domain.SignUpInput) (int, error)
-	GetUser(email, password string) (domain.User, error)
-	DeleteUserById(userID int) error
+	CreateUser(ctx context.Context, userInput domain.SignUpInput) (int, error)
+	GetUser(ctx context.Context, email, password string) (domain.User, error)
+	DeleteUserById(ctx context.Context, userID int) error
 }
 
 // Tests interface is implemented by the test repository.
 type Tests interface {
-	CreateTest(userID int, testInput domain.TestInput) (int, error)
-	GetTest(testID int) (domain.Test, error)
-	UpdateTestById(testID int, testInput domain.TestInput) error
-	DeleteTestById(testID int) error
+	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
+	GetTest(ctx context.Context, testID int) (domain.Test, error)
+	UpdateTestById(ctx context.Context, testID int, testInput domain.TestInput) error
+	DeleteTestById(ctx context.Context, testID int) error
 }
 
 // Repository is the composite of all repositories.

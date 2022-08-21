@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
@@ -13,15 +14,16 @@ import (
 )
 
 func TestHandlers_CreateTests(t *testing.T) {
+	ctx := context.Background()
 	user := randomUser()
 	test := randomTest()
 
-	userID, err := mockServices.Auth.CreateUser(user)
+	userID, err := mockServices.Auth.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
 	if err != nil {
 		t.Errorf("error generating token: %v", err)
 	}
@@ -80,20 +82,21 @@ func TestHandlers_CreateTests(t *testing.T) {
 }
 
 func TestHandlers_GetTest(t *testing.T) {
+	ctx := context.Background()
 	user := randomUser()
 	test := randomTest()
 
-	userID, err := mockServices.Auth.CreateUser(user)
+	userID, err := mockServices.Auth.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
 	if err != nil {
 		t.Errorf("error generating token: %v", err)
 	}
 
-	testID, err := mockRepo.CreateTest(userID, test)
+	testID, err := mockRepo.CreateTest(ctx, userID, test)
 	if err != nil {
 		t.Errorf("error creating test: %v", err)
 	}
@@ -172,14 +175,15 @@ func TestHandlers_GetTest(t *testing.T) {
 }
 
 func TestHandlers_UpdateTestByID(t *testing.T) {
+	ctx := context.Background()
 	user := randomUser()
 
-	userID, err := mockServices.Auth.CreateUser(user)
+	userID, err := mockServices.Auth.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
 	if err != nil {
 		t.Errorf("error generating token: %v", err)
 	}
@@ -262,17 +266,15 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 }
 
 func TestHandlers_DeleteTestByID(t *testing.T) {
-	user := domain.SignUpInput{
-		Email:    "TestHandlers_DeleteTestByID@mail.com",
-		Password: "12345",
-	}
+	ctx := context.Background()
+	user := randomUser()
 
-	userID, err := mockServices.Auth.CreateUser(user)
+	userID, err := mockServices.Auth.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(user.Email, user.Password)
+	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
 	if err != nil {
 		t.Errorf("error generating token: %v", err)
 	}

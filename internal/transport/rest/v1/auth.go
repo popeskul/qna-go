@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// Auth interface is implemented by the service.
 type Auth interface {
 	SignUp(ctx context.Context, user domain.SignUpInput) error
 	SignIn(ctx context.Context, user domain.SignInInput) (domain.User, error)
@@ -42,7 +43,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Auth.CreateUser(user)
+	id, err := h.service.Auth.CreateUser(c, user)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -73,7 +74,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.Auth.GenerateToken(input.Email, input.Password)
+	token, err := h.service.Auth.GenerateToken(c, input.Email, input.Password)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -39,14 +40,14 @@ func NewServiceAuth(repo repository.Auth) *ServiceAuth {
 // It's return error if user already exist.
 // It's return error if password is empty.
 // It's return error if email is empty.
-func (s *ServiceAuth) CreateUser(input domain.SignUpInput) (int, error) {
+func (s *ServiceAuth) CreateUser(ctx context.Context, input domain.SignUpInput) (int, error) {
 	passwordPasha, err := generatePasswordHash(input.Password)
 	if err != nil {
 		return 0, err
 	}
 
 	input.Password = passwordPasha
-	return s.repo.CreateUser(input)
+	return s.repo.CreateUser(ctx, input)
 }
 
 // GetUser get user from db.
@@ -55,8 +56,8 @@ func (s *ServiceAuth) CreateUser(input domain.SignUpInput) (int, error) {
 // It's return error if email is empty.
 // It's return error if password is not equal to password in db.
 // It's return error if email is not equal to email in db.
-func (s *ServiceAuth) GetUser(email, password string) (domain.User, error) {
-	return s.repo.GetUser(email, password)
+func (s *ServiceAuth) GetUser(ctx context.Context, email, password string) (domain.User, error) {
+	return s.repo.GetUser(ctx, email, password)
 }
 
 // GenerateToken generate new token.
@@ -66,13 +67,13 @@ func (s *ServiceAuth) GetUser(email, password string) (domain.User, error) {
 // It's return error if email is empty.
 // It's return error if password is not equal to password in db.
 // It's return error if email is not equal to email in db.
-func (s *ServiceAuth) GenerateToken(username, password string) (string, error) {
+func (s *ServiceAuth) GenerateToken(ctx context.Context, username, password string) (string, error) {
 	passwordHash, err := generatePasswordHash(password)
 	if err != nil {
 		return "", err
 	}
 
-	user, err := s.repo.GetUser(username, passwordHash)
+	user, err := s.repo.GetUser(ctx, username, passwordHash)
 	if err != nil {
 		return "", err
 	}
@@ -112,8 +113,8 @@ func (s *ServiceAuth) ParseToken(accessToken string) (int, error) {
 
 // DeleteUserById delete user from db.
 // It's return error if user not found.
-func (s *ServiceAuth) DeleteUserById(userID int) error {
-	return s.repo.DeleteUserById(userID)
+func (s *ServiceAuth) DeleteUserById(ctx context.Context, userID int) error {
+	return s.repo.DeleteUserById(ctx, userID)
 }
 
 // generatePasswordHash generate password hash.
