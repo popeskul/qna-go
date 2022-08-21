@@ -34,7 +34,7 @@ func NewRepoTests(db *sql.DB) *RepositoryTests {
 func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTest domain.TestInput) (int, error) {
 	var id int
 
-	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
 		if inputTest.Title == "" {
 			return ErrEmptyTitle
 		}
@@ -69,7 +69,7 @@ func (r *RepositoryTests) GetTest(ctx context.Context, testID int) (domain.Test,
 // UpdateTestById updates a test by id.
 // Returns an error if any.
 func (r *RepositoryTests) UpdateTestById(ctx context.Context, testID int, inputTest domain.TestInput) error {
-	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
 		if inputTest.Title == "" {
 			return ErrEmptyTitle
 		}
@@ -92,7 +92,7 @@ func (r *RepositoryTests) UpdateTestById(ctx context.Context, testID int, inputT
 // DeleteTestById deletes a test by id.
 // Returns an error if any.
 func (r *RepositoryTests) DeleteTestById(ctx context.Context, testID int) error {
-	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
 		if testID == 0 {
 			return ErrTestAuthorIDEmpty
 		}

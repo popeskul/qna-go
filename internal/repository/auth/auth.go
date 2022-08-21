@@ -28,7 +28,7 @@ func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 func (r *RepositoryAuth) CreateUser(ctx context.Context, u domain.SignUpInput) (int, error) {
 	var userID int
 
-	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
 		createUserQuery := fmt.Sprintln("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
 		if err := r.db.QueryRowContext(ctx, createUserQuery, u.Name, u.Email, u.Password).Scan(&userID); err != nil {
 			return err
@@ -57,7 +57,7 @@ func (r *RepositoryAuth) GetUser(ctx context.Context, email, password string) (d
 // DeleteUserById deletes a user from the database.
 // Returns an error if any.
 func (r *RepositoryAuth) DeleteUserById(ctx context.Context, userID int) error {
-	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
+	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
 		deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")
 		if _, err := r.db.ExecContext(ctx, deleteUserQuery, userID); err != nil {
 			return err
