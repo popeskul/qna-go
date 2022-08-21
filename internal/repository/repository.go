@@ -21,6 +21,7 @@ type Auth interface {
 type Tests interface {
 	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
 	GetTest(ctx context.Context, testID int) (domain.Test, error)
+	GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
 	UpdateTestById(ctx context.Context, testID int, testInput domain.TestInput) error
 	DeleteTestById(ctx context.Context, testID int) error
 }

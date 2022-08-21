@@ -3,24 +3,20 @@ package v1
 
 import (
 	"context"
-	"errors"
+	"database/sql"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"net/http"
-	"strconv"
 )
 
 // Tests interface is implemented by the service.
 type Tests interface {
 	CreateTest(ctx context.Context, test domain.TestInput) error
 	GetTestByID(ctx context.Context, id int) (domain.Test, error)
+	GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
 	UpdateTestByID(ctx context.Context, id int, test domain.TestInput) error
 	DeleteTestByID(ctx context.Context, id int) error
-}
-
-type getTestByIDResponse struct {
-	Status string      `json:"status"`
-	Test   domain.Test `json:"test"`
 }
 
 func (h *Handlers) CreateTest(c *gin.Context) {
@@ -43,8 +39,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
-		"id":     id,
+		"id": id,
 	})
 }
 
@@ -55,21 +50,59 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
+	var request domain.GetTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	test, err := h.service.Tests.GetTest(c, testID)
+	test, err := h.service.Tests.GetTest(c, request.ID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			newErrorResponse(c, http.StatusNotFound, "test not found")
+			return
+		}
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, getTestByIDResponse{
-		Status: "success",
-		Test:   test,
+	c.JSON(http.StatusOK, domain.GetTestByIDResponse{
+		Test: test,
+	})
+}
+
+func (h *Handlers) GetAllTestsByCurrentUser(c *gin.Context) {
+	userID, error := getUserId(c)
+	if error != nil {
+		newErrorResponse(c, http.StatusUnauthorized, error.Error())
+		return
+	}
+
+	var request domain.GetAllTestsRequest
+	if err := c.ShouldBindQuery(&request); err != nil {
+		fmt.Println(request, err)
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	args := domain.GetAllTestsParams{
+		Limit:  request.PageSize,
+		Offset: (request.PageID - 1) * request.PageSize,
+	}
+
+	tests, err := h.service.Tests.GetAllTestsByCurrentUser(c, userID, args)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			newErrorResponse(c, http.StatusNotFound, "tests not found")
+			return
+		}
+
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, domain.AllTestResponse{
+		Tests: tests,
 	})
 }
 
@@ -79,11 +112,16 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
+	var request domain.GetTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	//testID, err := getIdFromRequest(c)
+	//if err != nil {
+	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
+	//	return
+	//}
 
 	var test domain.TestInput
 	if err := c.ShouldBindJSON(&test); err != nil {
@@ -91,7 +129,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.UpdateTestByID(c, testID, test); err != nil {
+	if err := h.service.Tests.UpdateTestByID(c, request.ID, test); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -105,34 +143,16 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	testID, err := getIdFromRequest(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var request domain.GetTestByIDRequest
+	if err := c.ShouldBindUri(&request); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err = h.service.Tests.DeleteTestByID(c, testID); err != nil {
+	if err := h.service.Tests.DeleteTestByID(c, request.ID); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, statusResponse{"success"})
-}
-
-// getIdFromRequest gets the id from the request.
-// It's returns an error if the id is not a number.
-// If the id is not a number, it returns an error.
-// If the id is zero, it returns an error.
-func getIdFromRequest(r *gin.Context) (int, error) {
-	id, err := strconv.Atoi(r.Param("id"))
-	if err != nil {
-		return 0, err
-	}
-
-	if id == 0 {
-		return 0, errors.New("id can't be 0")
-	}
-
-	return id, nil
 }

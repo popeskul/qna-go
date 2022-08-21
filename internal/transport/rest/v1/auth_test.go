@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -12,10 +13,11 @@ import (
 )
 
 func TestAuth_SignUp(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
 	u2 := randomUser()
 
-	userID := helperCreatUser(t, u)
+	userID := helperCreatUser(t, ctx, u)
 
 	validJSON, _ := json.Marshal(u2)
 	invalidUniqueEmailJSON, _ := json.Marshal(u)
@@ -77,9 +79,10 @@ func TestAuth_SignUp(t *testing.T) {
 }
 
 func TestAuth_SignIn(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
 
-	userID := helperCreatUser(t, u)
+	userID := helperCreatUser(t, ctx, u)
 
 	validJSON, _ := json.Marshal(u)
 	invalidJSON, _ := json.Marshal(randomUser())
