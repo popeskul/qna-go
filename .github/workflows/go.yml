@@ -38,11 +38,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update && sudo apt-get upgrade -y
-          sudo apt-get install --yes postgresql-client
-
       - name: Setup prod database
         run: psql -h localhost -U postgres -c 'CREATE DATABASE "qna_db";'
         env:
