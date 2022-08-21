@@ -25,12 +25,12 @@ func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 
 // CreateUser creates a new user in the database.
 // Returns the user and an error if any.
-func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
+func (r *RepositoryAuth) CreateUser(ctx context.Context, u domain.SignUpInput) (int, error) {
 	var userID int
 
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		createUserQuery := fmt.Sprintln("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id")
-		if err := r.db.QueryRow(createUserQuery, u.Name, u.Email, u.Password).Scan(&userID); err != nil {
+		if err := r.db.QueryRowContext(ctx, createUserQuery, u.Name, u.Email, u.Password).Scan(&userID); err != nil {
 			return err
 		}
 
@@ -42,11 +42,11 @@ func (r *RepositoryAuth) CreateUser(u domain.SignUpInput) (int, error) {
 
 // GetUser returns a user from the database.
 // Returns the user and an error if any.
-func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
+func (r *RepositoryAuth) GetUser(ctx context.Context, email, password string) (domain.User, error) {
 	var user domain.User
 
 	getUserQuery := fmt.Sprintln("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users WHERE email = $1 AND encrypted_password = $2")
-	err := r.db.QueryRow(getUserQuery, email, password).Scan(&user.ID, &user.Name, &user.Email, &user.EncryptedPassword, &user.CreatedAt, &user.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, getUserQuery, email, password).Scan(&user.ID, &user.Name, &user.Email, &user.EncryptedPassword, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return user, err
 	}
@@ -56,10 +56,10 @@ func (r *RepositoryAuth) GetUser(email, password string) (domain.User, error) {
 
 // DeleteUserById deletes a user from the database.
 // Returns an error if any.
-func (r *RepositoryAuth) DeleteUserById(userID int) error {
+func (r *RepositoryAuth) DeleteUserById(ctx context.Context, userID int) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		deleteUserQuery := fmt.Sprintln("DELETE FROM users WHERE id = $1")
-		if _, err := r.db.Exec(deleteUserQuery, userID); err != nil {
+		if _, err := r.db.ExecContext(ctx, deleteUserQuery, userID); err != nil {
 			return err
 		}
 

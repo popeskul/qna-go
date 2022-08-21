@@ -1,12 +1,49 @@
 package tests
 
 import (
+	"context"
+	"database/sql"
+	"github.com/joho/godotenv"
+	"github.com/popeskul/qna-go/internal/config"
+	"github.com/popeskul/qna-go/internal/db"
+	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/util"
+	"log"
+	"os"
+	"path"
+	"runtime"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
+var mockDB *sql.DB
+var mockRepo *RepositoryTests
+
+func TestMain(m *testing.M) {
+	if err := changeDirToRoot(); err != nil {
+		log.Fatal(err)
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := newDBConnection(cfg)
+	mockDB = db
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mockRepo = NewRepoTests(mockDB)
+
+	os.Exit(m.Run())
+}
+
 func TestRepositoryTests_CreateTest(t *testing.T) {
+	ctx := context.Background()
 	mockUserID := 1
 	testID := helperCreateTest(t, randomTest(), 1)
 
@@ -53,7 +90,7 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := tt.args.repo.CreateTest(tt.args.userID, tt.args.input)
+			id, err := tt.args.repo.CreateTest(ctx, tt.args.userID, tt.args.input)
 
 			if (err != nil) != (tt.want.err != nil) {
 				t.Errorf("RepositoryTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
@@ -72,6 +109,7 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 }
 
 func TestRepositoryTests_UpdateTestById(t *testing.T) {
+	ctx := context.Background()
 	mockTestAuthorID := 1
 	createdID := helperCreateTest(t, randomTest(), mockTestAuthorID)
 
@@ -122,12 +160,12 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.args.repo.UpdateTestById(tt.args.testID, tt.args.input)
+			err := tt.args.repo.UpdateTestById(ctx, tt.args.testID, tt.args.input)
 			if err != tt.want.err {
 				t.Errorf("RepositoryTests.UpdateTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
 
-			test, _ := tt.args.repo.GetTest(createdID)
+			test, _ := tt.args.repo.GetTest(ctx, createdID)
 			if test.Title != tt.want.rest.Title && err == nil {
 				t.Errorf("RepositoryTests.UpdateTestById() error = %v, wantErr %v", test.Title, tt.want.rest.Title)
 			}
@@ -140,6 +178,7 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 }
 
 func TestRepositoryTests_DeleteTestById(t *testing.T) {
+	ctx := context.Background()
 	userIDZero := helperCreateTest(t, randomTest(), 1)
 	userID := helperCreateTest(t, randomTest(), 2)
 
@@ -179,7 +218,7 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.args.repo.DeleteTestById(tt.args.testID)
+			err := tt.args.repo.DeleteTestById(ctx, tt.args.testID)
 			if err != tt.want.err {
 				t.Errorf("RepositoryTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
@@ -212,4 +251,41 @@ func helperCreateTest(t *testing.T, test domain.TestInput, authorID int) int {
 		t.Errorf("error creating test: %v", err)
 	}
 	return id
+}
+
+func newDBConnection(cfg *config.Config) (*sql.DB, error) {
+	return postgres.NewPostgresConnection(db.ConfigDB{
+		Host:     cfg.DB.Host,
+		Port:     cfg.DB.Port,
+		User:     cfg.DB.User,
+		Password: cfg.DB.Password,
+		DBName:   cfg.DB.DBName,
+		SSLMode:  cfg.DB.SSLMode,
+	})
+}
+
+func loadConfig() (*config.Config, error) {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Some error occured. Err: %s", err)
+	}
+
+	cfg, err := config.New("configs", "test.config")
+	if err != nil {
+		return nil, err
+	}
+	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+
+	return cfg, nil
+}
+
+func changeDirToRoot() error {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := path.Join(path.Dir(filename), "./../../../")
+	err := os.Chdir(dir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -18,15 +18,9 @@ type Tests interface {
 	DeleteTestByID(ctx context.Context, id int) error
 }
 
-// InitTestsRouter initializes all the routes for the tests.
-func (h *Handlers) InitTestsRouter(v1 *gin.RouterGroup) {
-	testsAPI := v1.Group("/tests", h.authMiddleware)
-	{
-		testsAPI.POST("/", h.CreateTest)
-		testsAPI.GET("/:id", h.GetTestByID)
-		testsAPI.PUT("/:id", h.UpdateTestByID)
-		testsAPI.DELETE("/:id", h.DeleteTestByID)
-	}
+type getTestByIDResponse struct {
+	Status string      `json:"status"`
+	Test   domain.Test `json:"test"`
 }
 
 func (h *Handlers) CreateTest(c *gin.Context) {
@@ -42,7 +36,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Tests.CreateTest(userId, test)
+	id, err := h.service.Tests.CreateTest(c, userId, test)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -67,15 +61,15 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	test, err := h.service.Tests.GetTest(testID)
+	test, err := h.service.Tests.GetTest(c, testID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"test":   test,
+	c.JSON(http.StatusOK, getTestByIDResponse{
+		Status: "success",
+		Test:   test,
 	})
 }
 
@@ -97,7 +91,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.UpdateTestByID(testID, test); err != nil {
+	if err = h.service.Tests.UpdateTestByID(c, testID, test); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -118,7 +112,7 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.DeleteTestByID(testID); err != nil {
+	if err = h.service.Tests.DeleteTestByID(c, testID); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

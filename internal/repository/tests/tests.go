@@ -31,7 +31,7 @@ func NewRepoTests(db *sql.DB) *RepositoryTests {
 }
 
 // CreateTest creates a new test in the database.
-func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (int, error) {
+func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTest domain.TestInput) (int, error) {
 	var id int
 
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
@@ -44,7 +44,7 @@ func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (
 		}
 
 		createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
-		if err := r.db.QueryRow(createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
+		if err := r.db.QueryRowContext(ctx, createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
 			return err
 		}
 
@@ -56,10 +56,10 @@ func (r *RepositoryTests) CreateTest(authorID int, inputTest domain.TestInput) (
 
 // GetTest returns a test by id.
 // Returns the test and an error if any.
-func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
+func (r *RepositoryTests) GetTest(ctx context.Context, testID int) (domain.Test, error) {
 	var test domain.Test
 	getTestQuery := fmt.Sprintln("SELECT * FROM tests WHERE id = $1")
-	if err := r.db.QueryRow(getTestQuery, testID).Scan(&test.ID, &test.Title, &test.AuthorID, &test.CreatedAt, &test.UpdatedAt); err != nil {
+	if err := r.db.QueryRowContext(ctx, getTestQuery, testID).Scan(&test.ID, &test.Title, &test.AuthorID, &test.CreatedAt, &test.UpdatedAt); err != nil {
 		return domain.Test{}, err
 	}
 
@@ -68,7 +68,7 @@ func (r *RepositoryTests) GetTest(testID int) (domain.Test, error) {
 
 // UpdateTestById updates a test by id.
 // Returns an error if any.
-func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput) error {
+func (r *RepositoryTests) UpdateTestById(ctx context.Context, testID int, inputTest domain.TestInput) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		if inputTest.Title == "" {
 			return ErrEmptyTitle
@@ -79,7 +79,7 @@ func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput)
 		}
 
 		updateTestQuery := fmt.Sprintln("UPDATE tests SET title = $1 WHERE id = $2")
-		if _, err := r.db.Exec(updateTestQuery, inputTest.Title, testID); err != nil {
+		if _, err := r.db.ExecContext(ctx, updateTestQuery, inputTest.Title, testID); err != nil {
 			return err
 		}
 
@@ -91,14 +91,14 @@ func (r *RepositoryTests) UpdateTestById(testID int, inputTest domain.TestInput)
 
 // DeleteTestById deletes a test by id.
 // Returns an error if any.
-func (r *RepositoryTests) DeleteTestById(testID int) error {
+func (r *RepositoryTests) DeleteTestById(ctx context.Context, testID int) error {
 	err := r.ExecTx(context.Background(), func(tx *sql.Tx) error {
 		if testID == 0 {
 			return ErrTestAuthorIDEmpty
 		}
 
 		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
-		if _, err := r.db.Exec(deleteTestQuery, testID); err != nil {
+		if _, err := r.db.ExecContext(ctx, deleteTestQuery, testID); err != nil {
 			return err
 		}
 

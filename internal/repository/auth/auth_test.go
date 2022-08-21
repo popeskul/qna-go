@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/joho/godotenv"
@@ -14,11 +15,39 @@ import (
 	"path"
 	"runtime"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
+var mockDB *sql.DB
+var mockRepo *RepositoryAuth
+
+func TestMain(m *testing.M) {
+	if err := changeDirToRoot(); err != nil {
+		log.Fatal(err)
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := newDBConnection(cfg)
+	mockDB = db
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mockRepo = NewRepoAuth(mockDB)
+
+	os.Exit(m.Run())
+}
+
 func TestRepositoryAuth_CreateUser(t *testing.T) {
+	ctx := context.Background()
+
 	u := randomUser()
-	userID, err := mockRepo.CreateUser(u)
+	userID, err := mockRepo.CreateUser(ctx, u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -62,7 +91,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := tt.fields.repo.CreateUser(tt.args.u)
+			id, err := tt.fields.repo.CreateUser(ctx, tt.args.u)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryAuth.CreateUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -75,15 +104,16 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		if err = mockRepo.DeleteUserById(userID); err != nil {
+		if err = mockRepo.DeleteUserById(ctx, userID); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
 func TestRepositoryAuth_GetUser(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
-	userId, err := mockRepo.CreateUser(u)
+	userId, err := mockRepo.CreateUser(ctx, u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -116,7 +146,7 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.fields.repo.GetUser(tt.args.email, tt.args.password)
+			got, err := tt.fields.repo.GetUser(ctx, tt.args.email, tt.args.password)
 			if err != nil {
 				t.Error(err)
 			}
@@ -128,19 +158,20 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		if err = mockRepo.DeleteUserById(userId); err != nil {
+		if err = mockRepo.DeleteUserById(ctx, userId); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
 func TestRepositoryAuth_DeleteUserById(t *testing.T) {
+	ctx := context.Background()
 	user := domain.SignUpInput{
 		Name:     "John Doe",
 		Email:    "TestRepositoryAuth_DeleteUserById@mail.com",
 		Password: "12345",
 	}
-	userId, err := mockRepo.CreateUser(user)
+	userId, err := mockRepo.CreateUser(ctx, user)
 	if err != nil {
 		t.Error(err)
 	}
@@ -178,7 +209,7 @@ func TestRepositoryAuth_DeleteUserById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.args.repo.DeleteUserById(userId); err != nil {
+			if err := tt.args.repo.DeleteUserById(ctx, userId); err != nil {
 				t.Error(err)
 			}
 		})
@@ -198,7 +229,8 @@ func randomUser() domain.SignUpInput {
 }
 
 func helperDeleteUserByID(t *testing.T, id int) {
-	if err := mockRepo.DeleteUserById(id); err != nil {
+	ctx := context.Background()
+	if err := mockRepo.DeleteUserById(ctx, id); err != nil {
 		t.Error(err)
 	}
 }

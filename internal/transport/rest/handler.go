@@ -26,18 +26,11 @@ func NewHandler(service *services.Service) *Handlers {
 func (h *Handlers) Init() *gin.Engine {
 	router := gin.Default()
 
-	h.initAPI(router)
+	apiV1 := router.Group("/api/v1")
+	{
+		handlersV1 := v1.NewHandler(h.service)
+		handlersV1.Init(apiV1)
+	}
 
 	return router
-}
-
-// initAPI initializes the api handlers.
-// It registers the v1 handlers.
-func (h *Handlers) initAPI(router *gin.Engine) {
-	handlerV1 := v1.NewHandler(h.service)
-
-	api := router.Group("/api")
-	{
-		handlerV1.Init(api)
-	}
 }

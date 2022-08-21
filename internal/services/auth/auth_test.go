@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/joho/godotenv"
@@ -49,6 +50,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestServiceAuth_CreateUser(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
 
 	type fields struct {
@@ -87,7 +89,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			userID, err := NewServiceAuth(tt.fields.repo).CreateUser(tt.args.input)
+			userID, err := NewServiceAuth(tt.fields.repo).CreateUser(ctx, tt.args.input)
 			if err != nil {
 				if !strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
@@ -102,8 +104,9 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 }
 
 func TestServiceAuth_GetUser(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
-	userID, err := mockRepo.CreateUser(u)
+	userID, err := mockRepo.CreateUser(ctx, u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -151,7 +154,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewServiceAuth(tt.fields.repo)
-			got, err := s.GetUser(tt.args.email, tt.args.password)
+			got, err := s.GetUser(ctx, tt.args.email, tt.args.password)
 
 			if err != nil {
 				if tt.want != nil && tt.want.Email != got.Email {
@@ -167,8 +170,9 @@ func TestServiceAuth_GetUser(t *testing.T) {
 }
 
 func TestServiceAuth_GenerateToken(t *testing.T) {
+	ctx := context.Background()
 	u := randomUser()
-	userID, err := mockService.CreateUser(u)
+	userID, err := mockService.CreateUser(ctx, u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -205,7 +209,7 @@ func TestServiceAuth_GenerateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err = mockService.GenerateToken(tt.args.user.Email, tt.args.user.Password)
+			_, err = mockService.GenerateToken(ctx, tt.args.user.Email, tt.args.user.Password)
 
 			if err != nil && tt.wantError != nil {
 				if !strings.Contains(err.Error(), tt.wantError.Error()) {
