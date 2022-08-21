@@ -13,9 +13,7 @@ import (
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
-	"path"
 	"reflect"
-	"runtime"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -27,7 +25,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	if err := changeDirToRoot(); err != nil {
+	if err := util.ChangeDir("./../../../"); err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
 
@@ -269,15 +267,4 @@ func loadConfig() (*config.Config, error) {
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
 	return cfg, nil
-}
-
-func changeDirToRoot() error {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := path.Join(path.Dir(filename), "./../../../")
-	err := os.Chdir(dir)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

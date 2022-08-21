@@ -5,16 +5,15 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/popeskul/qna-go/internal/db"
+	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
-	"path"
 	"reflect"
-	"runtime"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	if err := changeDirToRoot(); err != nil {
+	if err := util.ChangeDir("./../../../"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -81,15 +80,4 @@ func TestNewPostgresConnection(t *testing.T) {
 			}
 		})
 	}
-}
-
-func changeDirToRoot() error {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := path.Join(path.Dir(filename), "./../../../")
-	err := os.Chdir(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return nil
 }
