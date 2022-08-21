@@ -3,6 +3,7 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
@@ -63,6 +64,10 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 
 	test, err := h.service.Tests.GetTest(c, testID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			newErrorResponse(c, http.StatusNotFound, "test not found")
+			return
+		}
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
