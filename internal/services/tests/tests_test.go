@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
@@ -48,6 +49,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestServiceTests_CreateTest(t *testing.T) {
+	ctx := context.Background()
 	u := randomTest()
 	mockUserID := 1
 
@@ -94,7 +96,7 @@ func TestServiceTests_CreateTest(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			testID, err := mockRepo.CreateTest(tt.args.userID, tt.args.input)
+			testID, err := mockRepo.CreateTest(ctx, tt.args.userID, tt.args.input)
 
 			if err != tt.want.err {
 				t.Errorf("ServiceTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
@@ -109,8 +111,9 @@ func TestServiceTests_CreateTest(t *testing.T) {
 }
 
 func TestServiceTests_UpdateTestById(t *testing.T) {
+	ctx := context.Background()
 	mockUserID := 1
-	testID, err := mockRepo.CreateTest(mockUserID, randomTest())
+	testID, err := mockRepo.CreateTest(ctx, mockUserID, randomTest())
 	if err != nil {
 		t.Errorf("error creating test: %v", err)
 	}
@@ -159,7 +162,7 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err = mockRepo.UpdateTestById(tt.args.userID, tt.args.input)
+			err = mockRepo.UpdateTestById(ctx, tt.args.userID, tt.args.input)
 
 			if err != tt.want.err {
 				t.Errorf("ServiceTests.UpdateTestById() error = %v, wantErr %v", err, tt.want.err)
@@ -174,6 +177,7 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 }
 
 func TestServiceTests_DeleteTestById(t *testing.T) {
+	ctx := context.Background()
 	mockUserID := 1
 
 	type args struct {
@@ -212,12 +216,12 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			testID, err := mockRepo.CreateTest(tt.args.userID, randomTest())
+			testID, err := mockRepo.CreateTest(ctx, tt.args.userID, randomTest())
 			if !reflect.DeepEqual(err, tt.want.err) {
 				t.Errorf("ServiceTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
 
-			err = mockRepo.DeleteTestById(tt.args.userID)
+			err = mockRepo.DeleteTestById(ctx, tt.args.userID)
 			if err != tt.want.err {
 				t.Errorf("ServiceTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}

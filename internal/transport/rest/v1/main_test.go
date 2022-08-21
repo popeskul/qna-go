@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -76,7 +77,8 @@ func randomTest() domain.TestInput {
 }
 
 func helperCreatUser(t *testing.T, user domain.SignUpInput) int {
-	id, err := mockServices.CreateUser(user)
+	ctx := context.Background()
+	id, err := mockServices.CreateUser(ctx, user)
 	if err != nil {
 		t.Fatalf("Some error occured. Err: %mockServices", err)
 	}

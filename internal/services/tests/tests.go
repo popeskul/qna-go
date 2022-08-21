@@ -2,6 +2,7 @@
 package tests
 
 import (
+	"context"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
 )
@@ -20,24 +21,24 @@ func NewServiceTests(repo repository.Tests) *ServiceTests {
 
 // CreateTest create new test in db.
 // It's return error and test id if test created.
-func (s *ServiceTests) CreateTest(userID int, test domain.TestInput) (int, error) {
-	return s.repo.CreateTest(userID, test)
+func (s *ServiceTests) CreateTest(ctx context.Context, userID int, test domain.TestInput) (int, error) {
+	return s.repo.CreateTest(ctx, userID, test)
 }
 
 // GetTest get test from db.
 // It's return domain.Test and error if test not found.
-func (s *ServiceTests) GetTest(testID int) (domain.Test, error) {
-	return s.repo.GetTest(testID)
+func (s *ServiceTests) GetTest(ctx context.Context, testID int) (domain.Test, error) {
+	return s.repo.GetTest(ctx, testID)
 }
 
 // UpdateTestByID update test in db.
 // It's return testID and error if test not found.
-func (s *ServiceTests) UpdateTestByID(testID int, test domain.TestInput) error {
-	return s.repo.UpdateTestById(testID, test)
+func (s *ServiceTests) UpdateTestByID(ctx context.Context, testID int, test domain.TestInput) error {
+	return s.repo.UpdateTestById(ctx, testID, test)
 }
 
 // DeleteTestByID delete test in db.
 // It's return an error if test not found.
-func (s *ServiceTests) DeleteTestByID(testID int) error {
-	return s.repo.DeleteTestById(testID)
+func (s *ServiceTests) DeleteTestByID(ctx context.Context, testID int) error {
+	return s.repo.DeleteTestById(ctx, testID)
 }

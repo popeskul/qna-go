@@ -30,7 +30,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Auth.CreateUser(user)
+	id, err := h.service.Auth.CreateUser(c, user)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -49,7 +49,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.Auth.GenerateToken(input.Email, input.Password)
+	token, err := h.service.Auth.GenerateToken(c, input.Email, input.Password)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

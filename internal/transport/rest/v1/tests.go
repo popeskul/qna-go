@@ -42,7 +42,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Tests.CreateTest(userId, test)
+	id, err := h.service.Tests.CreateTest(c, userId, test)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -67,7 +67,7 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 		return
 	}
 
-	test, err := h.service.Tests.GetTest(testID)
+	test, err := h.service.Tests.GetTest(c, testID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -97,7 +97,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.UpdateTestByID(testID, test); err != nil {
+	if err = h.service.Tests.UpdateTestByID(c, testID, test); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.Tests.DeleteTestByID(testID); err != nil {
+	if err = h.service.Tests.DeleteTestByID(c, testID); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

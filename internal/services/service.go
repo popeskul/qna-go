@@ -2,6 +2,7 @@
 package services
 
 import (
+	"context"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services/auth"
@@ -10,18 +11,18 @@ import (
 
 // Auth interface is implemented by auth service.
 type Auth interface {
-	CreateUser(userInput domain.SignUpInput) (int, error)
-	GetUser(email, password string) (domain.User, error)
-	GenerateToken(username, password string) (string, error)
+	CreateUser(ctx context.Context, userInput domain.SignUpInput) (int, error)
+	GetUser(ctx context.Context, email, password string) (domain.User, error)
+	GenerateToken(ctx context.Context, username, password string) (string, error)
 	ParseToken(token string) (int, error)
 }
 
 // Tests interface is implemented by tests service.
 type Tests interface {
-	CreateTest(userID int, testInput domain.TestInput) (int, error)
-	GetTest(testID int) (domain.Test, error)
-	UpdateTestByID(testID int, testInput domain.TestInput) error
-	DeleteTestByID(testID int) error
+	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
+	GetTest(ctx context.Context, testID int) (domain.Test, error)
+	UpdateTestByID(ctx context.Context, testID int, testInput domain.TestInput) error
+	DeleteTestByID(ctx context.Context, testID int) error
 }
 
 // Service struct is composed of all services.
