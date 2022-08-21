@@ -71,7 +71,7 @@ func (r *RepositoryTests) GetTest(ctx context.Context, testID int) (domain.Test,
 // It's return []domain.Test and error if any.
 func (r *RepositoryTests) GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error) {
 	allTests := make([]domain.Test, 0)
-	allTestsQuery := fmt.Sprintf("SELECT * FROM tests WHERE author_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3")
+	allTestsQuery := fmt.Sprintln("SELECT * FROM tests WHERE author_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3")
 
 	rows, err := r.db.QueryContext(ctx, allTestsQuery, userID, args.Limit, args.Offset)
 	if err != nil {
