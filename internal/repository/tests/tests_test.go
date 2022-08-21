@@ -11,8 +11,6 @@ import (
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
-	"path"
-	"runtime"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -22,7 +20,7 @@ var mockDB *sql.DB
 var mockRepo *RepositoryTests
 
 func TestMain(m *testing.M) {
-	if err := changeDirToRoot(); err != nil {
+	if err := util.ChangeDir("../../"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -45,7 +43,7 @@ func TestMain(m *testing.M) {
 func TestRepositoryTests_CreateTest(t *testing.T) {
 	ctx := context.Background()
 	mockUserID := 1
-	testID := helperCreateTest(t, randomTest(), 1)
+	testID := helperCreateTest(t, mockUserID, randomTest())
 
 	type args struct {
 		repo   *RepositoryTests
@@ -111,7 +109,8 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 func TestRepositoryTests_UpdateTestById(t *testing.T) {
 	ctx := context.Background()
 	mockTestAuthorID := 1
-	createdID := helperCreateTest(t, randomTest(), mockTestAuthorID)
+	createdID := helperCreateTest(t, mockTestAuthorID, randomTest())
+	updatedTitle := util.RandomString(10)
 
 	type args struct {
 		repo   *RepositoryTests
@@ -133,12 +132,12 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 				repo:   mockRepo,
 				testID: createdID,
 				input: domain.TestInput{
-					Title: "Test title updated",
+					Title: updatedTitle,
 				},
 			},
 			want: want{
 				rest: domain.Test{
-					Title: "Test title updated",
+					Title: updatedTitle,
 				},
 				err: nil,
 			},
@@ -179,8 +178,8 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 
 func TestRepositoryTests_DeleteTestById(t *testing.T) {
 	ctx := context.Background()
-	userIDZero := helperCreateTest(t, randomTest(), 1)
-	userID := helperCreateTest(t, randomTest(), 2)
+	userIDZero := helperCreateTest(t, 1, randomTest())
+	userID := helperCreateTest(t, 2, randomTest())
 
 	type args struct {
 		repo   *RepositoryTests
@@ -231,6 +230,92 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 	})
 }
 
+func TestRepositoryTests_GetAllTestsByUserID(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		repo             *RepositoryTests
+		createByQuantity int
+		params           domain.GetAllTestsParams
+	}
+	type want struct {
+		createdByQuantity int
+		error             error
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Success: first 3 tests",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 3,
+				params: domain.GetAllTestsParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			},
+			want: want{
+				createdByQuantity: 3,
+			},
+		},
+		{
+			name: "Success: offset = 2",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 3,
+				params: domain.GetAllTestsParams{
+					Limit:  10,
+					Offset: 2,
+				},
+			},
+			want: want{
+				createdByQuantity: 1,
+			},
+		},
+		{
+			name: "Success: empty tests",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 0,
+			},
+			want: want{
+				createdByQuantity: 0,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			createdIDs := make([]int, tt.args.createByQuantity)
+			authorID := 1
+
+			for i := 0; i < tt.args.createByQuantity; i++ {
+				testID := helperCreateTest(t, authorID, randomTest())
+				createdIDs = append(createdIDs, testID)
+			}
+
+			allTests, err := tt.args.repo.GetAllTestsByCurrentUser(ctx, authorID, tt.args.params)
+			if err != nil {
+				t.Errorf("RepositoryTests.GetAllTests() error = %v", err)
+			}
+
+			if len(allTests) != tt.want.createdByQuantity {
+				t.Errorf("RepositoryTests.GetAllTests() error = %v, wantErr %v", len(allTests), tt.want.createdByQuantity)
+			}
+
+			t.Cleanup(func() {
+				for _, testID := range createdIDs {
+					helperDeleteTest(t, testID)
+				}
+			})
+		})
+	}
+}
+
 func randomTest() domain.TestInput {
 	return domain.TestInput{
 		Title: util.RandomString(10),
@@ -244,7 +329,7 @@ func helperDeleteTest(t *testing.T, id int) {
 	}
 }
 
-func helperCreateTest(t *testing.T, test domain.TestInput, authorID int) int {
+func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
 	t.Helper()
 	var id int
 	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {
@@ -277,15 +362,4 @@ func loadConfig() (*config.Config, error) {
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 
 	return cfg, nil
-}
-
-func changeDirToRoot() error {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := path.Join(path.Dir(filename), "./../../../")
-	err := os.Chdir(dir)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

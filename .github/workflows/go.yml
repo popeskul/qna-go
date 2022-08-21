@@ -1,11 +1,12 @@
-name: qna
+name: ci-qna
 
 on: push
 
 jobs:
   build:
-    name: Build
+    name: Test
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:latest
@@ -37,11 +38,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update && sudo apt-get upgrade -y
-          sudo apt-get install --yes postgresql-client
-
       - name: Setup prod database
         run: psql -h localhost -U postgres -c 'CREATE DATABASE "qna_db";'
         env:
@@ -61,22 +57,14 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Get dependencies
-        run: |
-          go get -v -t -d ./...
-          if [ -f Gopkg.toml ]; then
-              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-              dep ensure
-          fi
-
       - name: Create .env
         run: touch .env
 
-      - name: migrate database
+      - name: install golang-migrate
         run: |
-          curl -s https://packagecloud.io/install/repositories/golang-migrate/migrate/script.deb.sh | sudo bash
-          sudo apt-get update
-          sudo apt-get install migrate
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
+          which migrate
 
       - name: migrate prod database up
         run: |

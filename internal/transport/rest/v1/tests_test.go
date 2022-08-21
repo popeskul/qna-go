@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/util"
 	"net/http"
 	"net/http/httptest"
@@ -171,6 +172,154 @@ func TestHandlers_GetTest(t *testing.T) {
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
 		helperDeleteTestByID(t, testID)
+	})
+}
+
+func TestHandlers_GetAllTestsByUserID(t *testing.T) {
+	ctx := context.Background()
+	user := randomUser()
+
+	userID, err := mockServices.Auth.CreateUser(ctx, user)
+	if err != nil {
+		t.Errorf("error creating user: %v", err)
+	}
+
+	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+
+	type args struct {
+		repo             *repository.Repository
+		createByQuantity int
+		params           domain.GetAllTestsRequest
+	}
+	type want struct {
+		createdByQuantity int
+		status            int
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Success: Get all tests with default pagination",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 10,
+				params: domain.GetAllTestsRequest{
+					PageID:   1,
+					PageSize: 10,
+				},
+			},
+			want: want{
+				createdByQuantity: 10,
+				status:            http.StatusOK,
+			},
+		},
+		{
+			name: "Success: Get 1 page of tests but in db there are more than 10 tests",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 12,
+				params: domain.GetAllTestsRequest{
+					PageID:   1,
+					PageSize: 10,
+				},
+			},
+			want: want{
+				createdByQuantity: 10,
+				status:            http.StatusOK,
+			},
+		},
+		{
+			name: "Success: Get 3 page with 2 tests, in db there are 22 tests",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 22,
+				params: domain.GetAllTestsRequest{
+					PageID:   3,
+					PageSize: 10,
+				},
+			},
+			want: want{
+				createdByQuantity: 2,
+				status:            http.StatusOK,
+			},
+		},
+		{
+			name: "Fail: Get all tests with invalid pagination",
+			args: args{
+				repo:             mockRepo,
+				createByQuantity: 10,
+				params: domain.GetAllTestsRequest{
+					PageID:   0,
+					PageSize: -10,
+				},
+			},
+			want: want{
+				createdByQuantity: 0,
+				status:            http.StatusBadRequest,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			createdIDs := make([]int, tt.args.createByQuantity)
+
+			for i := 0; i < tt.args.createByQuantity; i++ {
+				testID := helperCreateTest(t, userID, randomTest())
+				createdIDs = append(createdIDs, testID)
+			}
+
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests", nil)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+token)
+
+			q := req.URL.Query()
+			q.Add("page_id", strconv.Itoa(tt.args.params.PageID))
+			q.Add("page_size", strconv.Itoa(tt.args.params.PageSize))
+			req.URL.RawQuery = q.Encode()
+
+			r := gin.Default()
+			r.GET("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.GetAllTestsByCurrentUser)
+
+			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
+				if w.Code != tt.want.status {
+					t.Errorf("error getting tests: %v", w.Code)
+				} else {
+					// we need to exit from test if status is not ok, and it's by plan
+					if w.Code == http.StatusBadRequest {
+						return true
+					}
+
+					res := w.Body.String()
+					obj := make(map[string]interface{})
+					t.Log("response: ", res)
+					err = json.Unmarshal([]byte(res), &obj)
+					if err != nil {
+						t.Errorf("error unmarshalling response: %v", err)
+					}
+
+					tests := obj["tests"].([]interface{})
+					if len(tests) != tt.want.createdByQuantity {
+						t.Errorf("error getting tests: %v", len(tests))
+					}
+				}
+
+				return w.Code == tt.want.status
+			})
+
+			t.Cleanup(func() {
+				for _, testID := range createdIDs {
+					helperDeleteTestByID(t, testID)
+				}
+			})
+		})
+	}
+
+	t.Cleanup(func() {
+		helperDeleteUserByID(t, userID)
 	})
 }
 

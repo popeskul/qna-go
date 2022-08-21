@@ -31,6 +31,10 @@ func (s *ServiceTests) GetTest(ctx context.Context, testID int) (domain.Test, er
 	return s.repo.GetTest(ctx, testID)
 }
 
+func (s *ServiceTests) GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error) {
+	return s.repo.GetAllTestsByCurrentUser(ctx, userID, args)
+}
+
 // UpdateTestByID update test in db.
 // It's return testID and error if test not found.
 func (s *ServiceTests) UpdateTestByID(ctx context.Context, testID int, test domain.TestInput) error {

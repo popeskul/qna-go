@@ -1,18 +1,5 @@
 // Package server implements HTTP server.
 // You can use it to implement a web server.
-// Example:
-// 		func main() {
-// 			r := mux.NewRouter()
-// 			r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 				w.Write([]byte("Hello World!"))
-// 			}).Methods("GET")
-// 			srv := server.NewServer(server.Config{
-// 				Addr: ":8080",
-// 				Handler: r,
-// 			})
-// 			srv.Run()
-// 		}
-
 package server
 
 import (
