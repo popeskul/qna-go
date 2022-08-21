@@ -25,7 +25,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	if err := util.ChangeDir("./../../../"); err != nil {
+	if err := util.ChangeDir("../../"); err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
 	}
 

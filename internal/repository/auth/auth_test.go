@@ -21,7 +21,7 @@ var mockDB *sql.DB
 var mockRepo *RepositoryAuth
 
 func TestMain(m *testing.M) {
-	if err := util.ChangeDir("./../../../"); err != nil {
+	if err := util.ChangeDir("../../"); err != nil {
 		log.Fatal(err)
 	}
 

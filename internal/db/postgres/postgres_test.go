@@ -13,7 +13,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := util.ChangeDir("./../../../"); err != nil {
+	if err := util.ChangeDir("../../"); err != nil {
 		log.Fatal(err)
 	}
 
