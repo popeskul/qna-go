@@ -267,10 +267,7 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 
 func TestHandlers_DeleteTestByID(t *testing.T) {
 	ctx := context.Background()
-	user := domain.SignUpInput{
-		Email:    "TestHandlers_DeleteTestByID@mail.com",
-		Password: "12345",
-	}
+	user := randomUser()
 
 	userID, err := mockServices.Auth.CreateUser(ctx, user)
 	if err != nil {
