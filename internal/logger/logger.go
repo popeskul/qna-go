@@ -35,7 +35,10 @@ func (h *writerHook) Fire(entry *logrus.Entry) error {
 	}
 
 	for _, writer := range h.Writer {
-		writer.Write([]byte(s))
+		_, err = writer.Write([]byte(s))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
