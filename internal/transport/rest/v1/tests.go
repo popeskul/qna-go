@@ -29,7 +29,7 @@ type Tests interface {
 // @Accept  json
 // @Produce  json
 // @Param test body domain.TestInput true "test"
-// @Success 200 {object} domain.Test
+// @Success 201
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Router /tests [post]

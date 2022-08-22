@@ -18,10 +18,6 @@ type SignInResponse struct {
 	Token string `json:"token"`
 }
 
-type SignUpResponse struct {
-	Status string `json:"status"`
-}
-
 // SignUp godoc
 // @Tags auth
 // @Summary Sign up
@@ -30,7 +26,7 @@ type SignUpResponse struct {
 // @Accept  json
 // @Produce  json
 // @Param user body domain.SignUpInput true "User"
-// @Success 200 {object} SignUpResponse
+// @Success 201
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Router /auth/sign-up [post]
