@@ -17,7 +17,7 @@ func TestAuth_SignUp(t *testing.T) {
 	u := randomUser()
 	u2 := randomUser()
 
-	userID := helperCreatUser(t, ctx, u)
+	helperCreatUser(t, ctx, u)
 
 	validJSON, _ := json.Marshal(u2)
 	invalidUniqueEmailJSON, _ := json.Marshal(u)
@@ -57,7 +57,7 @@ func TestAuth_SignUp(t *testing.T) {
 				t.Cleanup(func() {
 					var obj map[string]interface{}
 					if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-						t.Errorf("error unmarshalling response: %v", err)
+						t.Fatalf("failed to unmarshal response body: %v", err)
 					}
 
 					// if user is created, and it has an id
@@ -74,6 +74,10 @@ func TestAuth_SignUp(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
+		userID, err := findUserIDByEmail(u.Email)
+		if err != nil {
+			t.Fatalf("failed to find user by email: %v", err)
+		}
 		helperDeleteUserByID(t, userID)
 	})
 }
@@ -82,7 +86,12 @@ func TestAuth_SignIn(t *testing.T) {
 	ctx := context.Background()
 	u := randomUser()
 
-	userID := helperCreatUser(t, ctx, u)
+	helperCreatUser(t, ctx, u)
+
+	userID, err := findUserIDByEmail(u.Email)
+	if err != nil {
+		t.Fatalf("failed to find user by email: %v", err)
+	}
 
 	validJSON, _ := json.Marshal(u)
 	invalidJSON, _ := json.Marshal(randomUser())

@@ -40,10 +40,10 @@ func NewServiceAuth(repo repository.Auth) *ServiceAuth {
 // It's return error if user already exist.
 // It's return error if password is empty.
 // It's return error if email is empty.
-func (s *ServiceAuth) CreateUser(ctx context.Context, input domain.SignUpInput) (int, error) {
+func (s *ServiceAuth) CreateUser(ctx context.Context, input domain.SignUpInput) error {
 	passwordPasha, err := generatePasswordHash(input.Password)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	input.Password = passwordPasha

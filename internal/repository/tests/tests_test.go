@@ -88,15 +88,14 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := tt.args.repo.CreateTest(ctx, tt.args.userID, tt.args.input)
+			err := tt.args.repo.CreateTest(ctx, tt.args.userID, tt.args.input)
 
 			if (err != nil) != (tt.want.err != nil) {
-				t.Errorf("RepositoryTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
-				return
+				t.Fatalf("RepositoryTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
 			}
 
 			t.Cleanup(func() {
-				helperDeleteTest(t, id)
+				helperDeleteTestByTitle(t, tt.args.input.Title)
 			})
 		})
 	}
@@ -329,11 +328,18 @@ func helperDeleteTest(t *testing.T, id int) {
 	}
 }
 
+func helperDeleteTestByTitle(t *testing.T, title string) {
+	t.Helper()
+	if _, err := mockDB.Exec("DELETE FROM tests WHERE title = $1", title); err != nil {
+		t.Errorf("error deleting test: %v", err)
+	}
+}
+
 func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
 	t.Helper()
 	var id int
 	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {
-		t.Errorf("error creating test: %v", err)
+		t.Fatalf("error creating test: %v", err)
 	}
 	return id
 }

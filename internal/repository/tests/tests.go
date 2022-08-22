@@ -14,7 +14,7 @@ var (
 	ErrDuplicateAuthorID = errors.New("pq: duplicate key value violates unique constraint \"tests_author_id_key\"")
 	ErrTestAuthorIDEmpty = errors.New("author id is empty")
 	ErrEmptyTitle        = errors.New("title is empty")
-	ErrEmptyRepository   = errors.New("repository is empty")
+	ErrDeleteTest        = errors.New("error deleting test")
 )
 
 // RepositoryTests provides all the functions to execute the queries and transactions.
@@ -32,7 +32,7 @@ func NewRepoTests(db *sql.DB) *RepositoryTests {
 }
 
 // CreateTest creates a new test in the database.
-func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTest domain.TestInput) (int, error) {
+func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTest domain.TestInput) error {
 	var id int
 
 	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
@@ -52,7 +52,7 @@ func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTes
 		return nil
 	})
 
-	return id, err
+	return err
 }
 
 // GetTest returns a test by id.
@@ -121,9 +121,19 @@ func (r *RepositoryTests) DeleteTestById(ctx context.Context, testID int) error 
 			return ErrTestAuthorIDEmpty
 		}
 
-		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1")
-		if _, err := r.db.ExecContext(ctx, deleteTestQuery, testID); err != nil {
+		deleteTestQuery := fmt.Sprintln("DELETE FROM tests WHERE id = $1 RETURNING id")
+		res, err := r.db.ExecContext(ctx, deleteTestQuery, testID)
+		if err != nil {
 			return err
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected == 0 {
+			return ErrDeleteTest
 		}
 
 		return nil

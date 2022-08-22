@@ -74,13 +74,11 @@ func randomTest() domain.TestInput {
 	}
 }
 
-func helperCreatUser(t *testing.T, ctx context.Context, user domain.SignUpInput) int {
-	id, err := mockServices.CreateUser(ctx, user)
+func helperCreatUser(t *testing.T, ctx context.Context, user domain.SignUpInput) {
+	err := mockServices.CreateUser(ctx, user)
 	if err != nil {
-		t.Fatalf("Some error occured. Err: %mockServices", err)
+		t.Errorf("error creating user: %v", err)
 	}
-
-	return id
 }
 
 func helperCreateTest(t *testing.T, userID int, test domain.TestInput) int {
@@ -106,6 +104,25 @@ func helperDeleteTestByID(t *testing.T, id int) {
 	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {
 		t.Errorf("error deleting test: %v", err)
 	}
+}
+
+func helperFindTestByTitle(t *testing.T, title string) domain.Test {
+	t.Helper()
+	var test domain.Test
+	if err := mockDB.QueryRow("SELECT id, title, author_id FROM tests WHERE title = $1", title).Scan(&test.ID, &test.Title, &test.AuthorID); err != nil {
+		t.Errorf("error finding test: %v", err)
+	}
+
+	return test
+}
+
+func findUserIDByEmail(email string) (int, error) {
+	var id int
+	if err := mockDB.QueryRow("SELECT id FROM users WHERE email = $1", email).Scan(&id); err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func newDBConnection(cfg *config.Config) (*sql.DB, error) {
