@@ -21,7 +21,7 @@ func NewServiceTests(repo repository.Tests) *ServiceTests {
 
 // CreateTest create new test in db.
 // It's return error and test id if test created.
-func (s *ServiceTests) CreateTest(ctx context.Context, userID int, test domain.TestInput) (int, error) {
+func (s *ServiceTests) CreateTest(ctx context.Context, userID int, test domain.TestInput) error {
 	return s.repo.CreateTest(ctx, userID, test)
 }
 

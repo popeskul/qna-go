@@ -11,7 +11,7 @@ import (
 
 // Auth interface is implemented by auth service.
 type Auth interface {
-	CreateUser(ctx context.Context, userInput domain.SignUpInput) (int, error)
+	CreateUser(ctx context.Context, userInput domain.SignUpInput) error
 	GetUser(ctx context.Context, email, password string) (domain.User, error)
 	GenerateToken(ctx context.Context, username, password string) (string, error)
 	ParseToken(token string) (int, error)
@@ -19,7 +19,7 @@ type Auth interface {
 
 // Tests interface is implemented by tests service.
 type Tests interface {
-	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
+	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) error
 	GetTest(ctx context.Context, testID int) (domain.Test, error)
 	GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
 	UpdateTestByID(ctx context.Context, testID int, testInput domain.TestInput) error

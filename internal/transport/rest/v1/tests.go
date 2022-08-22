@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/tests"
 	"net/http"
 )
 
@@ -32,20 +33,16 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Tests.CreateTest(c, userId, test)
-	if err != nil {
+	if err := h.service.Tests.CreateTest(c, userId, test); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"id": id,
-	})
+	c.JSON(http.StatusCreated, statusResponse{"success"})
 }
 
 func (h *Handlers) GetTestByID(c *gin.Context) {
-	_, error := getUserId(c)
-	if error != nil {
+	if _, error := getUserId(c); error != nil {
 		newErrorResponse(c, http.StatusUnauthorized, error.Error())
 		return
 	}
@@ -117,11 +114,6 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//testID, err := getIdFromRequest(c)
-	//if err != nil {
-	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
-	//	return
-	//}
 
 	var test domain.TestInput
 	if err := c.ShouldBindJSON(&test); err != nil {
@@ -150,6 +142,11 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	}
 
 	if err := h.service.Tests.DeleteTestByID(c, request.ID); err != nil {
+		if err == tests.ErrDeleteTest {
+			newErrorResponse(c, http.StatusNotFound, tests.ErrDeleteTest.Error())
+			return
+		}
+
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

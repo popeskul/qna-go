@@ -21,7 +21,6 @@ type SignInResponse struct {
 
 type SignUpResponse struct {
 	Status string `json:"status"`
-	ID     int    `json:"id"`
 }
 
 func (h *Handlers) SignUp(c *gin.Context) {
@@ -31,15 +30,13 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.Auth.CreateUser(c, user)
-	if err != nil {
+	if err := h.service.Auth.CreateUser(c, user); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusCreated, SignUpResponse{
 		Status: "success",
-		ID:     id,
 	})
 }
 

@@ -12,14 +12,14 @@ import (
 
 // Auth interface is implemented by the auth repository.
 type Auth interface {
-	CreateUser(ctx context.Context, userInput domain.SignUpInput) (int, error)
+	CreateUser(ctx context.Context, userInput domain.SignUpInput) error
 	GetUser(ctx context.Context, email, password string) (domain.User, error)
 	DeleteUserById(ctx context.Context, userID int) error
 }
 
 // Tests interface is implemented by the test repository.
 type Tests interface {
-	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
+	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) error
 	GetTest(ctx context.Context, testID int) (domain.Test, error)
 	GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
 	UpdateTestById(ctx context.Context, testID int, testInput domain.TestInput) error

@@ -25,7 +25,7 @@ func NewRepoAuth(db *sql.DB) *RepositoryAuth {
 
 // CreateUser creates a new user in the database.
 // Returns the user and an error if any.
-func (r *RepositoryAuth) CreateUser(ctx context.Context, u domain.SignUpInput) (int, error) {
+func (r *RepositoryAuth) CreateUser(ctx context.Context, u domain.SignUpInput) error {
 	var userID int
 
 	err := r.ExecTx(ctx, func(tx *sql.Tx) error {
@@ -37,7 +37,7 @@ func (r *RepositoryAuth) CreateUser(ctx context.Context, u domain.SignUpInput) (
 		return nil
 	})
 
-	return userID, err
+	return err
 }
 
 // GetUser returns a user from the database.
