@@ -11,13 +11,6 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-// statusResponse is the response for status
-// It contains the status of the service
-// It's used to check the status of the service
-type statusResponse struct {
-	Status string `json:"status"`
-}
-
 // newErrorResponse creates a new error response
 // It logs the error and returns a new error response
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
