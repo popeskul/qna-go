@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
@@ -39,6 +40,13 @@ func (h *Handlers) authMiddleware(c *gin.Context) {
 	}
 
 	c.Set(userContextKey, userId)
+
+	c.Next()
+}
+
+// loggingMiddleware is a middleware that logs the request.
+func (h *Handlers) loggingMiddleware(c *gin.Context) {
+	h.logger.Infof("%s: [%s] - %s ", time.Now().Format(time.RFC3339), c.Request.Method, c.Request.URL.String())
 
 	c.Next()
 }

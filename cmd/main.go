@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/popeskul/qna-go/internal/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,9 +31,11 @@ const (
 )
 
 func main() {
+	log := logger.GetLogger()
+
 	cfg, err := initConfig()
 	if err != nil {
-		log.Fatalf("failed to init config: %v", err)
+		log.Fatal(err)
 	}
 
 	if err = runMigration(cfg); err != nil {
@@ -55,7 +57,7 @@ func main() {
 
 	repo := repository.NewRepository(db)
 	service := services.NewService(repo)
-	handlers := rest.NewHandler(service)
+	handlers := rest.NewHandler(service, log)
 
 	srv := server.NewServer(&http.Server{
 		Addr:           fmt.Sprintf(":%d", cfg.Server.Port),
