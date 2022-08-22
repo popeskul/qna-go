@@ -51,7 +51,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, statusResponse{"success"})
+	c.Status(http.StatusCreated)
 }
 
 // GetTestByID godoc
@@ -180,7 +180,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, statusResponse{"success"})
+	c.Status(http.StatusOK)
 }
 
 // DeleteTestByID godoc
@@ -218,5 +218,5 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, statusResponse{"success"})
+	c.Status(http.StatusOK)
 }

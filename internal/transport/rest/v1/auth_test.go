@@ -54,21 +54,11 @@ func TestAuth_SignUp(t *testing.T) {
 			r.POST("/api/v1/auth/sign-up", mockHandlers.SignUp)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
-				t.Cleanup(func() {
-					var obj map[string]interface{}
-					if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-						t.Fatalf("failed to unmarshal response body: %v", err)
-					}
-
-					// if user is created, and it has an id
-					// then delete it
-					if obj["id"] != nil {
-						id := int(obj["id"].(float64))
-						helperDeleteUserByID(t, id)
-					}
-				})
-
 				return w.Code == tt.status
+			})
+
+			t.Cleanup(func() {
+				helperDeleteUserByEmail(t, u2.Email)
 			})
 		})
 	}
