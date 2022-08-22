@@ -38,7 +38,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, statusResponse{"success"})
+	c.Status(http.StatusCreated)
 }
 
 func (h *Handlers) GetTestByID(c *gin.Context) {
@@ -126,7 +126,7 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, statusResponse{"success"})
+	c.Status(http.StatusOK)
 }
 
 func (h *Handlers) DeleteTestByID(c *gin.Context) {
@@ -151,5 +151,5 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, statusResponse{"success"})
+	c.Status(http.StatusOK)
 }

@@ -99,6 +99,13 @@ func helperDeleteUserByID(t *testing.T, id int) {
 	}
 }
 
+func helperDeleteUserByEmail(t *testing.T, email string) {
+	t.Helper()
+	if _, err := mockDB.Exec("DELETE FROM users WHERE email = $1", email); err != nil {
+		t.Errorf("error deleting user: %v", err)
+	}
+}
+
 func helperDeleteTestByID(t *testing.T, id int) {
 	t.Helper()
 	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {

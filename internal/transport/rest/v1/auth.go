@@ -15,8 +15,7 @@ type Auth interface {
 }
 
 type SignInResponse struct {
-	Status string `json:"status"`
-	Token  string `json:"token"`
+	Token string `json:"token"`
 }
 
 type SignUpResponse struct {
@@ -35,9 +34,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, SignUpResponse{
-		Status: "success",
-	})
+	c.Status(http.StatusCreated)
 }
 
 func (h *Handlers) SignIn(c *gin.Context) {
@@ -54,7 +51,6 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SignInResponse{
-		Status: "success",
-		Token:  token,
+		Token: token,
 	})
 }

@@ -65,17 +65,15 @@ func TestHandlers_CreateTests(t *testing.T) {
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Cleanup(func() {
 					if w.Code == http.StatusCreated {
-						var obj map[string]interface{}
-						if err = json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-							t.Fatalf("error unmarshalling response: %v", err)
+						var test domain.Test
+						if err := json.Unmarshal(tt.test, &test); err != nil {
+							t.Fatalf("error unmarshalling test: %v", err)
 						}
 
-						if obj["id"] != nil {
-							testID := int(obj["id"].(float64))
-							helperDeleteTestByID(t, testID)
-						}
+						helperDeleteTestByID(t, test.ID)
 					}
 				})
+
 				return w.Code == tt.status
 			})
 		})
