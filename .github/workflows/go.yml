@@ -77,4 +77,6 @@ jobs:
       - name: Test
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          TOKEN_SYMMETRIC_KEY: ${{ secrets.TOKEN_SYMMETRIC_KEY }}
+          ACCESS_TOKEN_DURATION: ${{ secrets.ACCESS_TOKEN_DURATION }}
         run: go test -v ./...
