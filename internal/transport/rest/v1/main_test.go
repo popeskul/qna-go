@@ -11,6 +11,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"net/http"
@@ -41,8 +42,13 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 
+	pasetoMaker, err := token.NewPasetoMaker(os.Getenv("TOKEN_SYMMETRIC_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo)
+	mockServices = services.NewService(mockRepo, pasetoMaker)
 	mockHandlers = NewHandler(mockServices)
 
 	gin.SetMode(gin.TestMode)
@@ -60,28 +66,29 @@ func testHTTPResponse(t *testing.T, r *gin.Engine, req *http.Request, f func(w *
 	}
 }
 
-func randomUser() domain.SignUpInput {
-	return domain.SignUpInput{
+func randomUser() domain.User {
+	return domain.User{
 		Name:     util.RandomString(10),
 		Email:    util.RandomString(10) + "@gmail.com",
 		Password: util.RandomString(10),
 	}
 }
 
-func randomTest() domain.TestInput {
-	return domain.TestInput{
-		Title: util.RandomString(10),
+func randomTest() domain.Test {
+	return domain.Test{
+		Title:    util.RandomString(10),
+		AuthorID: int(util.RandomInt(1, 100)),
 	}
 }
 
-func helperCreatUser(t *testing.T, ctx context.Context, user domain.SignUpInput) {
+func helperCreatUser(t *testing.T, ctx context.Context, user domain.User) {
 	err := mockServices.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
 }
 
-func helperCreateTest(t *testing.T, userID int, test domain.TestInput) int {
+func helperCreateTest(t *testing.T, userID int, test domain.Test) int {
 	t.Helper()
 
 	var id int

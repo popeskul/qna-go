@@ -29,7 +29,7 @@ func (h *Handlers) Init(api *gin.RouterGroup) *gin.RouterGroup {
 	testsAPI := api.Group("/tests", h.authMiddleware)
 	{
 		testsAPI.POST("/", h.CreateTest)
-		testsAPI.GET("/", h.GetAllTestsByCurrentUser)
+		testsAPI.GET("/", h.GetAllTestsByUserID)
 		testsAPI.GET("/:id", h.GetTestByID)
 		testsAPI.PUT("/:id", h.UpdateTestByID)
 		testsAPI.DELETE("/:id", h.DeleteTestByID)

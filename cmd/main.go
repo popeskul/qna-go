@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/popeskul/qna-go/internal/token"
 	"log"
 	"net/http"
 	"os"
@@ -53,8 +54,13 @@ func main() {
 	}
 	defer db.Close()
 
+	tokenMaker, err := token.NewPasetoMaker(cfg.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo)
+	service := services.NewService(repo, tokenMaker)
 	handlers := rest.NewHandler(service)
 
 	srv := server.NewServer(&http.Server{
@@ -87,8 +93,7 @@ func main() {
 	fmt.Println("Server stopped")
 }
 
-// initConfig reading from the .env file and environment variables.
-// If the .env file is not found and, it will use the default config.
+// initConfig reading from the .env file and environment variables and returns the config and error.
 func initConfig() (*config.Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		return nil, err
@@ -99,6 +104,7 @@ func initConfig() (*config.Config, error) {
 		return nil, err
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
 
 	return cfg, nil
 }

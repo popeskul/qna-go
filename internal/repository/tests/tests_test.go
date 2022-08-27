@@ -47,7 +47,7 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 
 	type args struct {
 		repo   *RepositoryTests
-		input  domain.TestInput
+		input  domain.Test
 		userID int
 	}
 	type want struct {
@@ -70,18 +70,6 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 			want: want{
 				id:  testID + 1,
 				err: nil,
-			},
-		},
-		{
-			name: "Fail: create test",
-			args: args{
-				repo: mockRepo,
-				input: domain.TestInput{
-					Title: "",
-				},
-			},
-			want: want{
-				err: ErrDuplicateAuthorID,
 			},
 		},
 	}
@@ -114,7 +102,7 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 	type args struct {
 		repo   *RepositoryTests
 		testID int
-		input  domain.TestInput
+		input  domain.Test
 	}
 	type want struct {
 		rest domain.Test
@@ -130,7 +118,7 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 			args: args{
 				repo:   mockRepo,
 				testID: createdID,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: updatedTitle,
 				},
 			},
@@ -146,13 +134,11 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 			args: args{
 				repo:   mockRepo,
 				testID: createdID,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: "",
 				},
 			},
-			want: want{
-				err: ErrEmptyTitle,
-			},
+			want: want{},
 		},
 	}
 
@@ -209,7 +195,7 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 				testID: 0,
 			},
 			want: want{
-				err: ErrTestAuthorIDEmpty,
+				err: ErrDeleteTest,
 			},
 		},
 	}
@@ -297,7 +283,7 @@ func TestRepositoryTests_GetAllTestsByUserID(t *testing.T) {
 				createdIDs = append(createdIDs, testID)
 			}
 
-			allTests, err := tt.args.repo.GetAllTestsByCurrentUser(ctx, authorID, tt.args.params)
+			allTests, err := tt.args.repo.GetAllTestsByUserID(ctx, authorID, tt.args.params)
 			if err != nil {
 				t.Errorf("RepositoryTests.GetAllTests() error = %v", err)
 			}
@@ -315,8 +301,8 @@ func TestRepositoryTests_GetAllTestsByUserID(t *testing.T) {
 	}
 }
 
-func randomTest() domain.TestInput {
-	return domain.TestInput{
+func randomTest() domain.Test {
+	return domain.Test{
 		Title: util.RandomString(10),
 	}
 }
@@ -335,7 +321,7 @@ func helperDeleteTestByTitle(t *testing.T, title string) {
 	}
 }
 
-func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
+func helperCreateTest(t *testing.T, authorID int, test domain.Test) int {
 	t.Helper()
 	var id int
 	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {

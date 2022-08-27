@@ -1,9 +1,8 @@
-package auth
+package user
 
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
@@ -53,7 +52,7 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 		repo *RepositoryAuth
 	}
 	type args struct {
-		u domain.SignUpInput
+		u domain.User
 	}
 	tests := []struct {
 		name    string
@@ -77,9 +76,10 @@ func TestRepositoryAuth_CreateUser(t *testing.T) {
 				repo: mockRepo,
 			},
 			args: args{
-				u: domain.SignUpInput{
-					Name:  util.RandomString(10),
-					Email: u.Email,
+				u: domain.User{
+					Name:     util.RandomString(10),
+					Email:    u.Email,
+					Password: util.RandomString(10),
 				},
 			},
 			wantErr: true,
@@ -155,7 +155,7 @@ func TestRepositoryAuth_GetUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.fields.repo.GetUser(ctx, tt.args.email, tt.args.password)
+			got, err := tt.fields.repo.GetUser(ctx, tt.args.email, []byte(tt.args.password))
 			if err != nil {
 				t.Error(err)
 			}
@@ -212,22 +212,22 @@ func TestRepositoryAuth_DeleteUserById(t *testing.T) {
 				repo: mockRepo,
 			},
 			want: want{
-				err: errors.New("record not found"),
+				err: ErrDeleteUser,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err = tt.args.repo.DeleteUserById(ctx, userID); err != nil {
+			if err = tt.args.repo.DeleteUserById(ctx, userID); err != tt.want.err {
 				t.Error(err)
 			}
 		})
 	}
 }
 
-func randomUser() domain.SignUpInput {
-	return domain.SignUpInput{
+func randomUser() domain.User {
+	return domain.User{
 		Name:     util.RandomString(10),
 		Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
 		Password: util.RandomString(10),

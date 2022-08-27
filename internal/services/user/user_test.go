@@ -1,4 +1,4 @@
-package auth
+package user
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 		repo *repository.Repository
 	}
 	type args struct {
-		input domain.SignUpInput
+		input domain.User
 	}
 	tests := []struct {
 		name   string
@@ -125,7 +125,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 	}
 	type args struct {
 		email    string
-		password string
+		password []byte
 	}
 	tests := []struct {
 		name   string
@@ -140,11 +140,11 @@ func TestServiceAuth_GetUser(t *testing.T) {
 			},
 			args: args{
 				email:    u.Email,
-				password: u.Password,
+				password: []byte(u.Password),
 			},
 			want: &domain.User{
-				Email:             u.Email,
-				EncryptedPassword: u.Password,
+				Email:    u.Email,
+				Password: u.Password,
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 			},
 			args: args{
 				email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
-				password: util.RandomString(10),
+				password: []byte(util.RandomString(10)),
 			},
 			want: nil,
 		},
@@ -178,75 +178,6 @@ func TestServiceAuth_GetUser(t *testing.T) {
 	})
 }
 
-func TestServiceAuth_GenerateToken(t *testing.T) {
-	ctx := context.Background()
-	u := randomUser()
-	if err := mockService.CreateUser(ctx, u); err != nil {
-		t.Fatalf("Some error occured. Err: %s", err)
-	}
-
-	userID, err := findUserIDByEmail(u.Email)
-	if err != nil {
-		t.Fatalf("Some error occured. Err: %s", err)
-	}
-
-	type args struct {
-		user domain.SignInInput
-	}
-	tests := []struct {
-		name      string
-		args      args
-		wantError error
-	}{
-		{
-			name: "success",
-			args: args{
-				user: domain.SignInInput{
-					Email:    u.Email,
-					Password: u.Password,
-				},
-			},
-			wantError: nil,
-		},
-		{
-			name: "fail",
-			args: args{
-				user: domain.SignInInput{
-					Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
-					Password: util.RandomString(10),
-				},
-			},
-			wantError: errors.New("sql: no rows in result set"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err = mockService.GenerateToken(ctx, tt.args.user.Email, tt.args.user.Password)
-
-			if err != nil && tt.wantError != nil {
-				if !strings.Contains(err.Error(), tt.wantError.Error()) {
-					t.Errorf("ServiceAuth.GenerateToken() error = %v, wantErr = %v", err, tt.wantError)
-				}
-			}
-		})
-	}
-
-	t.Cleanup(func() {
-		helperDeleteUserByID(t, userID)
-	})
-}
-
-func TestServiceAuth_generatePassword(t *testing.T) {
-	token, err := generatePasswordHash(util.RandomString(10))
-	if err != nil {
-		t.Fatalf("Some error occured. Err: %s", err)
-	}
-	if token == "" {
-		t.Error("token is empty")
-	}
-}
-
 func helperDeleteUserByID(t *testing.T, userID int) {
 	t.Helper()
 
@@ -266,8 +197,8 @@ func findUserIDByEmail(email string) (int, error) {
 	return userID, nil
 }
 
-func randomUser() domain.SignUpInput {
-	return domain.SignUpInput{
+func randomUser() domain.User {
+	return domain.User{
 		Name:     util.RandomString(10),
 		Email:    util.RandomString(10) + "@" + util.RandomString(10) + ".com",
 		Password: util.RandomString(10),
