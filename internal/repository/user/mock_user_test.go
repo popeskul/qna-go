@@ -36,93 +36,61 @@ func (s *RepositoryAuthSuite) TearDownTest() {
 
 func (s *RepositoryAuthSuite) TestCreateUser() {
 	ctx := context.Background()
-	u := randomUser()
+	user := randomUser()
 
-	testCases := []struct {
-		name      string
-		mock      func(store *mock.MockAuth)
-		check     func(t *testing.T, err error)
-		wantError error
+	type args struct {
+		u   domain.User
+		ctx context.Context
+	}
+	tests := []struct {
+		name string
+		mock func(ctx context.Context, u domain.User)
+		args args
+		err  error
 	}{
 		{
 			name: "Success: create user",
-			mock: func(store *mock.MockAuth) {
-				store.EXPECT().CreateUser(ctx, u).Return(nil)
+			mock: func(ctx context.Context, u domain.User) {
+				s.mockRepoAuth.
+					EXPECT().
+					CreateUser(ctx, u).
+					Return(nil)
 			},
-			check: func(t *testing.T, err error) {
-				s.NoError(err)
+			args: args{
+				u:   user,
+				ctx: ctx,
 			},
+			err: nil,
 		},
 		{
-			name: "Error: create user",
-			mock: func(store *mock.MockAuth) {
-				store.EXPECT().CreateUser(ctx, u).Return(ErrCreateUser)
+			name: "Fail: duplicate email",
+			mock: func(ctx context.Context, u domain.User) {
+				s.mockRepoAuth.
+					EXPECT().
+					CreateUser(ctx, u).
+					Return(ErrCreateUser)
 			},
-			check: func(t *testing.T, err error) {
-				s.Equal(ErrCreateUser, err)
+			args: args{
+				u:   domain.User{},
+				ctx: ctx,
 			},
-			wantError: ErrCreateUser,
+			err: ErrCreateUser,
 		},
 	}
 
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			tc.mock(s.mockRepoAuth)
-			err := s.mockRepoAuth.CreateUser(ctx, u)
-			tc.check(s.T(), err)
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			tt.mock(tt.args.ctx, tt.args.u)
+			err := s.mockRepoAuth.CreateUser(tt.args.ctx, tt.args.u)
+			s.Equal(tt.err, err)
 		})
 	}
-
-	// another way to test
-
-	//type args struct {
-	//	ctx  context.Context
-	//	user domain.User
-	//}
-	//type want struct {
-	//	err error
-	//}
-	//
-	//tests := []struct {
-	//	name string
-	//	args args
-	//	want want
-	//}{
-	//	{
-	//		name: "Success: create user",
-	//		args: args{
-	//			ctx:  ctx,
-	//			user: u,
-	//		},
-	//		want: want{
-	//			err: nil,
-	//		},
-	//	},
-	//	{
-	//		name: "Fail: create user",
-	//		args: args{
-	//			ctx:  ctx,
-	//			user: u,
-	//		},
-	//		want: want{
-	//			err: ErrCreateUser,
-	//		},
-	//	},
-	//}
-	//
-	//for _, tt := range tests {
-	//	s.T().Run(tt.name, func(t *testing.T) {
-	//		s.mockRepoAuth.EXPECT().CreateUser(tt.args.ctx, tt.args.user).Return(tt.want.err)
-	//		err := s.mockRepoAuth.CreateUser(tt.args.ctx, tt.args.user)
-	//		s.Equal(tt.want.err, err)
-	//	})
-	//}
 }
 
 func (s *RepositoryAuthSuite) TestGetUser() {
 	ctx := context.Background()
-	u := randomUser()
-	u2 := randomUser()
+	user1 := randomUser()
+	user2 := randomUser()
 
 	type args struct {
 		ctx  context.Context
@@ -134,7 +102,7 @@ func (s *RepositoryAuthSuite) TestGetUser() {
 	}
 	tests := []struct {
 		name string
-		mock func()
+		mock func(ctx context.Context, u domain.User)
 		args args
 		want want
 	}{
@@ -142,9 +110,9 @@ func (s *RepositoryAuthSuite) TestGetUser() {
 			name: "Success: get user",
 			args: args{
 				ctx:  ctx,
-				user: u,
+				user: user1,
 			},
-			mock: func() {
+			mock: func(ctx context.Context, u domain.User) {
 				s.mockRepoAuth.
 					EXPECT().
 					GetUser(ctx, u.Email, []byte(u.Password)).
@@ -152,20 +120,20 @@ func (s *RepositoryAuthSuite) TestGetUser() {
 			},
 			want: want{
 				err:  false,
-				user: u,
+				user: user1,
 			},
 		},
 		{
 			name: "Fail: get user",
 			args: args{
 				ctx:  ctx,
-				user: u2,
+				user: user2,
 			},
-			mock: func() {
+			mock: func(ctx context.Context, u domain.User) {
 				s.mockRepoAuth.
 					EXPECT().
-					GetUser(ctx, u2.Email, []byte(u2.Password)).
-					Return(domain.User{}, errors.New("error"))
+					GetUser(ctx, u.Email, []byte(u.Password)).
+					Return(domain.User{}, errors.New(""))
 			},
 			want: want{
 				err: true,
@@ -175,92 +143,134 @@ func (s *RepositoryAuthSuite) TestGetUser() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			tt.mock()
-			got, err := s.mockRepoAuth.GetUser(tt.args.ctx, tt.args.user.Email, []byte(tt.args.user.Password))
-			t.Log(got, err)
+			tt.mock(tt.args.ctx, tt.args.user)
+			u, err := s.mockRepoAuth.GetUser(tt.args.ctx, tt.args.user.Email, []byte(tt.args.user.Password))
 			s.Equal(tt.want.err, err != nil)
-			s.Equal(tt.want.user, got)
+			s.Equal(tt.want.user, u)
 		})
 	}
+}
 
-	// another way to test
+func (s *RepositoryAuthSuite) TestGetUserByEmail() {
+	ctx := context.Background()
+	user1 := randomUser()
+	user2 := randomUser()
 
-	//tests := []struct {
-	//	name    string
-	//	mock    func()
-	//	wantErr error
-	//}{
-	//	{
-	//		name: "Success: create user",
-	//		mock: func() {
-	//			s.mockRepoAuth.EXPECT().CreateUser(ctx, u).Return(nil)
-	//		},
-	//		wantErr: nil,
-	//	},
-	//	{
-	//		name: "Fail: duplicate email",
-	//		mock: func() {
-	//			s.mockRepoAuth.EXPECT().CreateUser(ctx, u2).Return(ErrCreateUser)
-	//		},
-	//		wantErr: ErrCreateUser,
-	//	},
-	//}
-	//
-	//for _, tt := range tests {
-	//	s.T().Run(tt.name, func(t *testing.T) {
-	//		tt.mock()
-	//
-	//		err := s.mockRepoAuth.CreateUser(ctx, u)
-	//		s.Equal(tt.wantErr, err)
-	//	})
-	//}
+	type args struct {
+		ctx  context.Context
+		user domain.User
+	}
+	type want struct {
+		err  bool
+		user domain.User
+	}
+	tests := []struct {
+		name string
+		mock func(ctx context.Context, u domain.User)
+		args args
+		want want
+	}{
+		{
+			name: "Success: get user",
+			args: args{
+				ctx:  ctx,
+				user: user1,
+			},
+			mock: func(ctx context.Context, u domain.User) {
+				s.mockRepoAuth.
+					EXPECT().
+					GetUserByEmail(ctx, u.Email).
+					Return(u, nil)
+			},
+			want: want{
+				err:  false,
+				user: user1,
+			},
+		},
+		{
+			name: "Fail: get user",
+			args: args{
+				ctx:  ctx,
+				user: user2,
+			},
+			mock: func(ctx context.Context, u domain.User) {
+				s.mockRepoAuth.
+					EXPECT().
+					GetUserByEmail(ctx, u.Email).
+					Return(domain.User{}, errors.New(""))
+			},
+			want: want{
+				err: true,
+			},
+		},
+	}
 
-	//type args struct {
-	//	ctx  context.Context
-	//	user domain.User
-	//}
-	//type want struct {
-	//	err  error
-	//	user domain.User
-	//}
-	//tests := []struct {
-	//	name string
-	//	args args
-	//	want want
-	//}{
-	//	{
-	//		name: "Success: get user",
-	//		args: args{
-	//			ctx:  ctx,
-	//			user: u,
-	//		},
-	//		want: want{
-	//			err:  nil,
-	//			user: u,
-	//		},
-	//	},
-	//	{
-	//		name: "Fail: get user",
-	//		args: args{
-	//			ctx:  ctx,
-	//			user: randomUser(),
-	//		},
-	//		want: want{
-	//			err: nil,
-	//		},
-	//	},
-	//}
-	//
-	//for _, tt := range tests {
-	//	s.T().Run(tt.name, func(t *testing.T) {
-	//		s.mockRepoAuth.
-	//			EXPECT().
-	//			GetUser(tt.args.ctx, tt.args.user.Email, []byte(tt.args.user.Password)).
-	//			Return(tt.args.user, tt.want.err)
-	//
-	//		userID, err := s.mockRepoAuth.GetUser(tt.args.ctx, tt.args.user.Email, []byte(tt.args.user.Password))
-	//		s.Equal(tt.want.err, err)
-	//		s.Equal(tt.want.user, userID)
-	//	})
-	//}
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			tt.mock(tt.args.ctx, tt.args.user)
+			u, err := s.mockRepoAuth.GetUserByEmail(tt.args.ctx, tt.args.user.Email)
+			s.Equal(tt.want.err, err != nil)
+			s.Equal(tt.want.user, u)
+		})
+	}
+}
+
+func (s *RepositoryAuthSuite) TestDeleteUserById() {
+	ctx := context.Background()
+	user := randomUser()
+
+	type args struct {
+		ctx  context.Context
+		user domain.User
+	}
+	type want struct {
+		err bool
+	}
+	tests := []struct {
+		name string
+		mock func(ctx context.Context, userID int)
+		args args
+		want want
+	}{
+		{
+			name: "Success: delete user",
+			args: args{
+				ctx:  ctx,
+				user: user,
+			},
+			mock: func(ctx context.Context, userID int) {
+				s.mockRepoAuth.
+					EXPECT().
+					DeleteUserById(ctx, userID).
+					Return(nil)
+			},
+			want: want{
+				err: false,
+			},
+		},
+		{
+			name: "Fail: delete user",
+			args: args{
+				ctx:  ctx,
+				user: user,
+			},
+			mock: func(ctx context.Context, userID int) {
+				s.mockRepoAuth.
+					EXPECT().
+					DeleteUserById(ctx, userID).
+					Return(errors.New(""))
+			},
+			want: want{
+				err: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			tt.mock(tt.args.ctx, tt.args.user.ID)
+			err := s.mockRepoAuth.DeleteUserById(tt.args.ctx, tt.args.user.ID)
+			s.Equal(tt.want.err, err != nil)
+		})
+	}
 }
