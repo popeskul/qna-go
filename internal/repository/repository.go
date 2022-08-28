@@ -1,5 +1,6 @@
 // Package repository is a struct that contains the repository.
 // This place define interface for the repository: Auth, Tests.
+//go:generate mockgen -source=repository.go -destination=mock/repository_mock.go -package=mock
 package repository
 
 import (

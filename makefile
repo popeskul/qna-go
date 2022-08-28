@@ -28,3 +28,6 @@ lint: .install-linter
 .PHONY: lint-fast
 lint-fast: .install-linter
 	$(GOLANGCI_LINT) run ./... --fast --config=./.golangci.yml
+
+generate-mock:
+	go generate -v ./...
