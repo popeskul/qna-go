@@ -26,11 +26,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	ConfigDir  = "configs"
-	ConfigFile = "config"
-)
-
 func main() {
 	cfg, err := initConfig()
 	if err != nil {
@@ -99,7 +94,7 @@ func initConfig() (*config.Config, error) {
 		return nil, err
 	}
 
-	cfg, err := config.New(ConfigDir, ConfigFile)
+	cfg, err := config.New("configs", "config")
 	if err != nil {
 		return nil, err
 	}

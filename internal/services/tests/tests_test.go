@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
@@ -196,7 +197,7 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 				testID: 11111111,
 			},
 			want: want{
-				err: tests.ErrDeleteTest,
+				err: tests.ErrTest,
 			},
 		},
 	}
@@ -204,7 +205,7 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := mockRepo.DeleteTestById(ctx, tt.args.testID)
-			if err != tt.want.err {
+			if errors.Unwrap(err) != tt.want.err {
 				t.Fatalf("ServiceTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
 		})

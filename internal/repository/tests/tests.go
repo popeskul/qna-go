@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrDeleteTest   = errors.New("error deleting test")
+	ErrTest         = errors.New("error test")
 	ErrTestNotFound = errors.New("test not found")
 )
 
@@ -34,10 +34,19 @@ func (r *RepositoryTests) CreateTest(ctx context.Context, authorID int, inputTes
 	}
 	defer tx.Rollback() // nolint:errcheck
 
-	var id int
-	createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id")
-	if err = r.db.QueryRowContext(ctx, createTestQuery, inputTest.Title, authorID).Scan(&id); err != nil {
+	createTestQuery := fmt.Sprintln("INSERT INTO tests (title, author_id) VALUES ($1, $2)")
+	rows, err := r.db.ExecContext(ctx, createTestQuery, inputTest.Title, authorID)
+	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := rows.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows affected %w", ErrTest)
 	}
 
 	return tx.Commit()
@@ -116,7 +125,7 @@ func (r *RepositoryTests) DeleteTestById(ctx context.Context, testID int) error 
 	}
 
 	if rowsAffected == 0 {
-		return ErrDeleteTest
+		return fmt.Errorf("no rows affected %w", ErrTest)
 	}
 
 	return tx.Commit()

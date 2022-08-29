@@ -4,6 +4,7 @@ package v1
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository/tests"
@@ -144,8 +145,8 @@ func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	}
 
 	if err = h.service.Tests.DeleteTestByID(c, testID); err != nil {
-		if err == tests.ErrDeleteTest {
-			newErrorResponse(c, http.StatusNotFound, tests.ErrDeleteTest.Error())
+		if errors.Unwrap(err) == tests.ErrTest {
+			newErrorResponse(c, http.StatusNotFound, tests.ErrTest.Error())
 			return
 		}
 
