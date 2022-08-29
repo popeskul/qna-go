@@ -1,38 +1,5 @@
 basePath: /
 definitions:
-  domain.SignInInput:
-    properties:
-      email:
-        maxLength: 255
-        minLength: 3
-        type: string
-      password:
-        maxLength: 255
-        minLength: 6
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  domain.SignUpInput:
-    properties:
-      email:
-        maxLength: 255
-        minLength: 3
-        type: string
-      name:
-        maxLength: 255
-        minLength: 3
-        type: string
-      password:
-        maxLength: 255
-        minLength: 6
-        type: string
-    required:
-    - email
-    - name
-    - password
-    type: object
   domain.Test:
     properties:
       author_id:
@@ -42,49 +9,50 @@ definitions:
       id:
         type: integer
       title:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  domain.TestInput:
-    properties:
-      title:
         maxLength: 255
         minLength: 3
+        type: string
+      updated_at:
         type: string
     required:
     - title
     type: object
-  v1.SignInResponse:
+  domain.User:
     properties:
-      status:
+      created_at:
         type: string
-      token:
+      email:
+        maxLength: 255
+        minLength: 3
         type: string
-    type: object
-  v1.SignUpResponse:
-    properties:
       id:
         type: integer
-      status:
+      name:
+        maxLength: 255
+        minLength: 3
         type: string
+      password:
+        maxLength: 255
+        minLength: 6
+        type: string
+      updated_at:
+        type: string
+    required:
+    - email
+    - name
+    - password
     type: object
   v1.errorResponse:
     properties:
       message:
         type: string
     type: object
-  v1.getTestByIDResponse:
+  v1.signInResponse:
     properties:
-      status:
+      accessToken:
         type: string
-      test:
-        $ref: '#/definitions/domain.Test'
-    type: object
-  v1.statusResponse:
-    properties:
-      status:
-        type: string
+      user:
+        $ref: '#/definitions/domain.User'
     type: object
 host: localhost:8080
 info:
@@ -93,26 +61,26 @@ info:
   title: Qna API
   version: "1.0"
 paths:
-  /auth/sign-in:
+  /sign-in:
     post:
       consumes:
       - application/json
-      description: Sign in user
+      description: Sign in
       operationId: sign-in
       parameters:
-      - description: User
+      - description: user
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/domain.SignInInput'
+          $ref: '#/definitions/domain.User'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.SignInResponse'
+            $ref: '#/definitions/v1.signInResponse'
         "400":
           description: Bad Request
           schema:
@@ -124,26 +92,24 @@ paths:
       summary: Sign in
       tags:
       - auth
-  /auth/sign-up:
+  /sign-up:
     post:
       consumes:
       - application/json
-      description: Sign up a new user
+      description: Sign up
       operationId: sign-up
       parameters:
-      - description: User
+      - description: user
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/domain.SignUpInput'
+          $ref: '#/definitions/domain.User'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.SignUpResponse'
+        "201":
+          description: Created
         "400":
           description: Bad Request
           schema:
@@ -156,6 +122,50 @@ paths:
       tags:
       - auth
   /tests:
+    get:
+      consumes:
+      - application/json
+      description: Get all tests by current user
+      operationId: get-all-tests-by-current-user
+      parameters:
+      - description: page id
+        in: query
+        name: page_id
+        type: integer
+      - description: page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Test'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all tests by current user
+      tags:
+      - tests
     post:
       consumes:
       - application/json
@@ -167,16 +177,18 @@ paths:
         name: test
         required: true
         schema:
-          $ref: '#/definitions/domain.TestInput'
+          $ref: '#/definitions/domain.Test'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/domain.Test'
+        "201":
+          description: Created
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/v1.errorResponse'
         "500":
@@ -205,10 +217,16 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/v1.statusResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/v1.errorResponse'
         "500":
@@ -237,9 +255,17 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.getTestByIDResponse'
+            $ref: '#/definitions/domain.Test'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.errorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/v1.errorResponse'
         "500":
@@ -267,16 +293,14 @@ paths:
         name: test
         required: true
         schema:
-          $ref: '#/definitions/domain.TestInput'
+          $ref: '#/definitions/domain.Test'
       produces:
       - application/json
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/v1.statusResponse'
-        "400":
-          description: Bad Request
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/v1.errorResponse'
         "500":

@@ -9,15 +9,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config represents application config
+// Config represents application config.
 type Config struct {
 	DB     Postgres
 	Server struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"server"`
+	TokenSymmetricKey string `mapstructure:"token_symmetric_key"`
 }
 
-// Postgres represents postgres config
+// Postgres represents postgres config.
 type Postgres struct {
 	Host     string
 	Port     int
@@ -27,8 +28,7 @@ type Postgres struct {
 	SSLMode  string
 }
 
-// New loads config from environment variables and viper config file
-// Returns Config struct and error if any
+// New loads config from environment variables and viper config file. Returns error if config is not valid.
 func New(folder, filename string) (*Config, error) {
 	cfg := &Config{}
 

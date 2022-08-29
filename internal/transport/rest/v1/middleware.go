@@ -4,84 +4,67 @@ package v1
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/popeskul/qna-go/internal/token"
 	"net/http"
 	"strings"
 )
 
 const (
-	authorizationHeader        = "Authorization"
-	userContextKey             = "userId"
-	unauthenticatedUserError   = "user is unauthenticated"
-	invalidAuthorizationHeader = "Authorization header is invalid"
+	authorizationHeader     = "Authorization"
+	authorizationType       = "Bearer"
+	authorizationPayloadKey = "authorization_payload"
 )
 
 var (
-	ErrUserIsNotAuthorized = errors.New("user not authorized")
-	ErrUserIdNotFound      = errors.New("user id not found")
+	ErrUserIdNotFound    = errors.New("user id not found")
+	ErrTokenNotFound     = errors.New("token not found")
+	ErrAuthEmptyToken    = errors.New("empty auth header")
+	ErrInvalidAuthHeader = errors.New("authorization header is invalid")
 )
 
-// authMiddleware is a middleware that authenticates the user.
-// If the user is not authenticated, the request is aborted with an error.
-// If the user is authenticated, the user id is stored in the context.
-// The user id is used in the handlers.
-// The user id is stored in the context to avoid passing it as a parameter.
+// authMiddleware is a middleware that authenticates the user based on the token in the request.
 func (h *Handlers) authMiddleware(c *gin.Context) {
-	token, err := getTokenFromRequest(c.Request)
+	tokenFromRequest, err := getTokenFromRequest(c.Request)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, invalidAuthorizationHeader)
+		newErrorResponse(c, http.StatusUnauthorized, ErrInvalidAuthHeader.Error())
 		return
 	}
 
-	userId, err := h.service.Auth.ParseToken(token)
+	payload, err := h.service.TokenMaker.VerifyToken(tokenFromRequest)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
+		newErrorResponse(c, http.StatusUnauthorized, ErrInvalidAuthHeader.Error())
 		return
 	}
 
-	c.Set(userContextKey, userId)
-
+	c.Set(authorizationPayloadKey, payload)
 	c.Next()
 }
 
-// getTokenFromRequest extracts the token from the request.
-// The token is extracted from the Authorization header.
-// The token is expected to be in the format: Bearer <token>
-// If the token is not in the expected format, an error is returned.
+// getTokenFromRequest extracts the token from the request header.
 func getTokenFromRequest(r *http.Request) (string, error) {
 	header := r.Header.Get(authorizationHeader)
 	if header == "" {
-		return "", errors.New("empty auth header")
+		return "", ErrAuthEmptyToken
 	}
 
 	headerParts := strings.Split(header, " ")
-	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-		return "", errors.New("invalid auth header")
+	if len(headerParts) != 2 || headerParts[0] != authorizationType {
+		return "", ErrInvalidAuthHeader
 	}
 
 	if len(headerParts[1]) == 0 {
-		return "", errors.New("token is empty")
+		return "", ErrTokenNotFound
 	}
 
 	return headerParts[1], nil
 }
 
-// getUserId get the user id from the context.
-// If the user id is not found, an error is returned.
-// If the user id is zero, an error is returned.
-// If the user id is found, it is returned.
+// getUserId get the user id from the context and returns it and an error if it is not found.
 func getUserId(c *gin.Context) (int, error) {
-	id, ok := c.Get("userId")
-
-	if !ok {
-		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
-		return 0, ErrUserIsNotAuthorized
-	}
-
-	idInt, ok := id.(int)
-	if !ok {
-		newErrorResponse(c, http.StatusUnauthorized, unauthenticatedUserError)
+	authPayload := c.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload == nil {
 		return 0, ErrUserIdNotFound
 	}
 
-	return idInt, nil
+	return authPayload.UserID, nil
 }

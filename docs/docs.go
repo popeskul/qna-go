@@ -16,9 +16,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/sign-in": {
+        "/sign-in": {
             "post": {
-                "description": "Sign in user",
+                "description": "Sign in",
                 "consumes": [
                     "application/json"
                 ],
@@ -32,12 +32,12 @@ const docTemplate = `{
                 "operationId": "sign-in",
                 "parameters": [
                     {
-                        "description": "User",
+                        "description": "user",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SignInInput"
+                            "$ref": "#/definitions/domain.User"
                         }
                     }
                 ],
@@ -45,7 +45,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.SignInResponse"
+                            "$ref": "#/definitions/v1.signInResponse"
                         }
                     },
                     "400": {
@@ -63,9 +63,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/sign-up": {
+        "/sign-up": {
             "post": {
-                "description": "Sign up a new user",
+                "description": "Sign up",
                 "consumes": [
                     "application/json"
                 ],
@@ -79,21 +79,18 @@ const docTemplate = `{
                 "operationId": "sign-up",
                 "parameters": [
                     {
-                        "description": "User",
+                        "description": "user",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SignUpInput"
+                            "$ref": "#/definitions/domain.User"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.SignUpResponse"
-                        }
+                    "201": {
+                        "description": "Created"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -111,6 +108,74 @@ const docTemplate = `{
             }
         },
         "/tests": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get all tests by current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Get all tests by current user",
+                "operationId": "get-all-tests-by-current-user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page id",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Test"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -136,19 +201,22 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.TestInput"
+                            "$ref": "#/definitions/domain.Test"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/domain.Test"
-                        }
+                    "201": {
+                        "description": "Created"
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/v1.errorResponse"
                         }
@@ -194,11 +262,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.getTestByIDResponse"
+                            "$ref": "#/definitions/domain.Test"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/v1.errorResponse"
                         }
@@ -243,19 +323,16 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.TestInput"
+                            "$ref": "#/definitions/domain.Test"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.statusResponse"
-                        }
+                        "description": "OK"
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/v1.errorResponse"
                         }
@@ -297,13 +374,22 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.statusResponse"
-                        }
+                        "description": "OK"
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/v1.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/v1.errorResponse"
                         }
@@ -319,52 +405,11 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.SignInInput": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 3
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 6
-                }
-            }
-        },
-        "domain.SignUpInput": {
-            "type": "object",
-            "required": [
-                "email",
-                "name",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 3
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 3
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 6
-                }
-            }
-        },
         "domain.Test": {
             "type": "object",
+            "required": [
+                "title"
+            ],
             "properties": {
                 "author_id": {
                     "type": "integer"
@@ -376,44 +421,45 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 3
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "domain.TestInput": {
+        "domain.User": {
             "type": "object",
             "required": [
-                "title"
+                "email",
+                "name",
+                "password"
             ],
             "properties": {
-                "title": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 3
-                }
-            }
-        },
-        "v1.SignInResponse": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string"
                 },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.SignUpResponse": {
-            "type": "object",
-            "properties": {
                 "id": {
                     "type": "integer"
                 },
-                "status": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 3
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 6
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -426,22 +472,14 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.getTestByIDResponse": {
+        "v1.signInResponse": {
             "type": "object",
             "properties": {
-                "status": {
+                "accessToken": {
                     "type": "string"
                 },
-                "test": {
-                    "$ref": "#/definitions/domain.Test"
-                }
-            }
-        },
-        "v1.statusResponse": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string"
+                "user": {
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         }
