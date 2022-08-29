@@ -43,9 +43,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "access_token",
                         "schema": {
-                            "$ref": "#/definitions/v1.signInResponse"
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -469,17 +469,6 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.signInResponse": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/domain.User"
                 }
             }
         }

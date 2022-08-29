@@ -59,7 +59,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param user body domain.User true "user"
-// @Success 200 {object} signInResponse
+// @Success 200 {string} string "access_token"
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Router /sign-in [post]
@@ -88,8 +88,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, signInResponse{
-		AccessToken: accessToken,
-		User:        user,
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": accessToken,
 	})
 }
