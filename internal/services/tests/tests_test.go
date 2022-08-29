@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
@@ -52,7 +53,7 @@ func TestServiceTests_CreateTest(t *testing.T) {
 
 	type args struct {
 		repo   *repository.Repository
-		input  domain.TestInput
+		input  domain.Test
 		userID int
 	}
 	type want struct {
@@ -74,19 +75,6 @@ func TestServiceTests_CreateTest(t *testing.T) {
 			},
 			want: want{
 				title: u.Title,
-			},
-		},
-		{
-			name: "Fail: Create test",
-			args: args{
-				repo: mockRepo,
-				input: domain.TestInput{
-					Title: "",
-				},
-				userID: mockUserID,
-			},
-			want: want{
-				err: tests.ErrEmptyTitle,
 			},
 		},
 	}
@@ -116,7 +104,7 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 
 	type args struct {
 		repo   *repository.Repository
-		input  domain.TestInput
+		input  domain.Test
 		userID int
 	}
 	type want struct {
@@ -132,7 +120,7 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 			name: "Success: Update test",
 			args: args{
 				repo: mockRepo,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: "Test title updated",
 				},
 				userID: mockUserID,
@@ -145,14 +133,12 @@ func TestServiceTests_UpdateTestById(t *testing.T) {
 			name: "Fail: Update test with empty title",
 			args: args{
 				repo: mockRepo,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: "",
 				},
 				userID: mockUserID,
 			},
-			want: want{
-				err: tests.ErrEmptyTitle,
-			},
+			want: want{},
 		},
 	}
 
@@ -211,7 +197,7 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 				testID: 11111111,
 			},
 			want: want{
-				err: tests.ErrDeleteTest,
+				err: tests.ErrTest,
 			},
 		},
 	}
@@ -219,7 +205,7 @@ func TestServiceTests_DeleteTestById(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := mockRepo.DeleteTestById(ctx, tt.args.testID)
-			if err != tt.want.err {
+			if errors.Unwrap(err) != tt.want.err {
 				t.Fatalf("ServiceTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
 		})
@@ -299,7 +285,7 @@ func TestServiceTests_GetAllTests(t *testing.T) {
 				createdIDs = append(createdIDs, testID)
 			}
 
-			allTests, err := tt.args.repo.GetAllTestsByCurrentUser(ctx, userID, tt.args.params)
+			allTests, err := tt.args.repo.GetAllTestsByUserID(ctx, userID, tt.args.params)
 			if err != nil {
 				t.Errorf("RepositoryTests.GetAllTests() error = %v", err)
 			}
@@ -311,7 +297,6 @@ func TestServiceTests_GetAllTests(t *testing.T) {
 
 			t.Cleanup(func() {
 				for _, testID := range createdIDs {
-					t.Log("Delete test: ", testID)
 					helperDeleteTest(t, testID)
 				}
 			})
@@ -319,13 +304,13 @@ func TestServiceTests_GetAllTests(t *testing.T) {
 	}
 }
 
-func randomTest() domain.TestInput {
-	return domain.TestInput{
+func randomTest() domain.Test {
+	return domain.Test{
 		Title: util.RandomString(10),
 	}
 }
 
-func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
+func helperCreateTest(t *testing.T, authorID int, test domain.Test) int {
 	t.Helper()
 	var id int
 	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {

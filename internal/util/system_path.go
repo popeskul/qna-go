@@ -7,8 +7,7 @@ import (
 	"runtime"
 )
 
-// ChangeDir changes current directory to root directory.
-// It returns error if failed to change directory.
+// ChangeDir changes current directory to root directory of the project and returns error if any.
 func ChangeDir(pathStr string) error {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := path.Join(path.Dir(filename), pathStr)

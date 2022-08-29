@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
@@ -47,7 +48,7 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 
 	type args struct {
 		repo   *RepositoryTests
-		input  domain.TestInput
+		input  domain.Test
 		userID int
 	}
 	type want struct {
@@ -72,26 +73,14 @@ func TestRepositoryTests_CreateTest(t *testing.T) {
 				err: nil,
 			},
 		},
-		{
-			name: "Fail: create test",
-			args: args{
-				repo: mockRepo,
-				input: domain.TestInput{
-					Title: "",
-				},
-			},
-			want: want{
-				err: ErrDuplicateAuthorID,
-			},
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.args.repo.CreateTest(ctx, tt.args.userID, tt.args.input)
 
-			if (err != nil) != (tt.want.err != nil) {
-				t.Fatalf("RepositoryTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
+			if err != tt.want.err {
+				t.Errorf("RepositoryTests.CreateTest() error = %v, wantErr %v", err, tt.want.err)
 			}
 
 			t.Cleanup(func() {
@@ -114,7 +103,7 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 	type args struct {
 		repo   *RepositoryTests
 		testID int
-		input  domain.TestInput
+		input  domain.Test
 	}
 	type want struct {
 		rest domain.Test
@@ -130,7 +119,7 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 			args: args{
 				repo:   mockRepo,
 				testID: createdID,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: updatedTitle,
 				},
 			},
@@ -146,13 +135,11 @@ func TestRepositoryTests_UpdateTestById(t *testing.T) {
 			args: args{
 				repo:   mockRepo,
 				testID: createdID,
-				input: domain.TestInput{
+				input: domain.Test{
 					Title: "",
 				},
 			},
-			want: want{
-				err: ErrEmptyTitle,
-			},
+			want: want{},
 		},
 	}
 
@@ -209,7 +196,7 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 				testID: 0,
 			},
 			want: want{
-				err: ErrTestAuthorIDEmpty,
+				err: ErrTest,
 			},
 		},
 	}
@@ -217,7 +204,7 @@ func TestRepositoryTests_DeleteTestById(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.args.repo.DeleteTestById(ctx, tt.args.testID)
-			if err != tt.want.err {
+			if errors.Unwrap(err) != tt.want.err {
 				t.Errorf("RepositoryTests.DeleteTestById() error = %v, wantErr %v", err, tt.want.err)
 			}
 		})
@@ -297,7 +284,7 @@ func TestRepositoryTests_GetAllTestsByUserID(t *testing.T) {
 				createdIDs = append(createdIDs, testID)
 			}
 
-			allTests, err := tt.args.repo.GetAllTestsByCurrentUser(ctx, authorID, tt.args.params)
+			allTests, err := tt.args.repo.GetAllTestsByUserID(ctx, authorID, tt.args.params)
 			if err != nil {
 				t.Errorf("RepositoryTests.GetAllTests() error = %v", err)
 			}
@@ -315,8 +302,8 @@ func TestRepositoryTests_GetAllTestsByUserID(t *testing.T) {
 	}
 }
 
-func randomTest() domain.TestInput {
-	return domain.TestInput{
+func randomTest() domain.Test {
+	return domain.Test{
 		Title: util.RandomString(10),
 	}
 }
@@ -335,7 +322,7 @@ func helperDeleteTestByTitle(t *testing.T, title string) {
 	}
 }
 
-func helperCreateTest(t *testing.T, authorID int, test domain.TestInput) int {
+func helperCreateTest(t *testing.T, authorID int, test domain.Test) int {
 	t.Helper()
 	var id int
 	if err := mockDB.QueryRow("INSERT INTO tests (title, author_id) VALUES ($1, $2) RETURNING id", test.Title, authorID).Scan(&id); err != nil {

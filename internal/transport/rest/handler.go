@@ -23,9 +23,7 @@ func NewHandler(service *services.Service, logger *logger.Logger) *Handlers {
 	}
 }
 
-// Init initializes the rest transport.
-// It creates the gin engine and registers all the handlers.
-// It returns the gin engine.
+// Init initializes the rest transport handlers and returns a gin engine.
 func (h *Handlers) Init() *gin.Engine {
 	router := gin.Default()
 
