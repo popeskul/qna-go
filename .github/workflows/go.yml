@@ -1,0 +1,82 @@
+name: ci-qna
+
+on: push
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: ${{secrets.DB_NAME}}
+          POSTGRES_PORT: ${{secrets.DB_PORT}}
+          POSTGRES_USER: ${{secrets.DB_USER}}
+          POSTGRES_PASSWORD: ${{secrets.DB_PASSWORD}}
+        ports:
+          - 5432:5432
+        options:
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres_test:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: ${{secrets.DB_NAME}}
+          POSTGRES_PORT: ${{secrets.DB_PORT_TEST}}
+          POSTGRES_USER: ${{secrets.DB_USER}}
+          POSTGRES_PASSWORD: ${{secrets.DB_PASSWORD}}
+        ports:
+          - 5436:5432
+        options:
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Setup prod database
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE "qna_db";'
+        env:
+          PGPASSWORD: ${{secrets.DB_PASSWORD}}
+
+      - name: Setup test database
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE "qna_db_test";'
+        env:
+          PGPASSWORD: ${{secrets.DB_PASSWORD}}
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.18
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Create .env
+        run: touch .env
+
+      - name: install golang-migrate
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
+          which migrate
+
+      - name: migrate prod database up
+        run: |
+          make migrate-up db_password=${{secrets.DB_PASSWORD}} db_host=${{secrets.DB_HOST}} db_port=${{secrets.DB_PORT}} db_user=${{secrets.DB_USER}} db_name=${{secrets.DB_NAME}}
+
+      - name: migrate test database up
+        run: |
+          make migrate-up db_password=${{secrets.DB_PASSWORD}} db_host=${{secrets.DB_HOST}} db_port=${{secrets.DB_PORT_TEST}} db_user=${{secrets.DB_USER}} db_name=${{secrets.DB_NAME}}
+
+      - name: Test
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          TOKEN_SYMMETRIC_KEY: ${{ secrets.TOKEN_SYMMETRIC_KEY }}
+          ACCESS_TOKEN_DURATION: ${{ secrets.ACCESS_TOKEN_DURATION }}
+        run: go test -v ./...
