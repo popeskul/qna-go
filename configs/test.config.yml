@@ -8,3 +8,6 @@ db:
 
 server:
   port: 8080
+
+cache:
+  ttl: 1h
