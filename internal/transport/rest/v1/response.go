@@ -1,25 +1,22 @@
 package v1
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	ErrTestNotFound = errors.New("test id is required")
+	ErrPermission   = errors.New("permission denied")
+)
+
 // errorResponse is the error response
-// It contains the error message
 type errorResponse struct {
 	Message string `json:"message"`
 }
 
-// statusResponse is the response for status
-// It contains the status of the service
-// It's used to check the status of the service
-type statusResponse struct {
-	Status string `json:"status"`
-}
-
-// newErrorResponse creates a new error response
-// It logs the error and returns a new error response
+// newErrorResponse creates a new error response and logs the error message
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
 	logrus.Error(message)
 	c.AbortWithStatusJSON(statusCode, errorResponse{message})

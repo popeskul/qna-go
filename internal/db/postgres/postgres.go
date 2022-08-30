@@ -6,9 +6,7 @@ import (
 	"github.com/popeskul/qna-go/internal/db"
 )
 
-// NewPostgresConnection creates new postgres connection
-// and returns it as *sql.DB instance
-// It returns error if connection cannot be established
+// NewPostgresConnection creates new postgres connection and returns *sql.DB and error.
 func NewPostgresConnection(cfg db.ConfigDB) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.String())
 	if err != nil {

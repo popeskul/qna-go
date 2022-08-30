@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestHandlers_CreateTests(t *testing.T) {
@@ -19,14 +20,20 @@ func TestHandlers_CreateTests(t *testing.T) {
 	user := randomUser()
 	test := randomTest()
 
-	userID, err := mockServices.Auth.CreateUser(ctx, user)
-	if err != nil {
-		t.Errorf("error creating user: %v", err)
+	if err := mockServices.Auth.CreateUser(ctx, user); err != nil {
+		t.Fatalf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+	userID, err := findUserIDByEmail(user.Email)
 	if err != nil {
-		t.Errorf("error generating token: %v", err)
+		t.Fatalf("error finding user: %v", err)
+	}
+
+	duration := time.Duration(1) * time.Second
+
+	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
 	}
 
 	validJSON, _ := json.Marshal(test)
@@ -61,17 +68,11 @@ func TestHandlers_CreateTests(t *testing.T) {
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Cleanup(func() {
 					if w.Code == http.StatusCreated {
-						var obj map[string]interface{}
-						if err = json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-							t.Errorf("error unmarshalling response: %v", err)
-						}
-
-						if obj["id"] != nil {
-							testID := int(obj["id"].(float64))
-							helperDeleteTestByID(t, testID)
-						}
+						test := helperFindTestByTitle(t, test.Title)
+						helperDeleteTestByID(t, test.ID)
 					}
 				})
+
 				return w.Code == tt.status
 			})
 		})
@@ -82,25 +83,31 @@ func TestHandlers_CreateTests(t *testing.T) {
 	})
 }
 
-func TestHandlers_GetTest(t *testing.T) {
+func TestHandlers_GetTestByID(t *testing.T) {
 	ctx := context.Background()
 	user := randomUser()
 	test := randomTest()
 
-	userID, err := mockServices.Auth.CreateUser(ctx, user)
-	if err != nil {
-		t.Errorf("error creating user: %v", err)
+	if err := mockServices.Auth.CreateUser(ctx, user); err != nil {
+		t.Fatalf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+	userID, err := findUserIDByEmail(user.Email)
 	if err != nil {
-		t.Errorf("error generating token: %v", err)
+		t.Fatalf("error finding user: %v", err)
 	}
 
-	testID, err := mockRepo.CreateTest(ctx, userID, test)
+	duration := time.Duration(1) * time.Second
+	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
 	if err != nil {
-		t.Errorf("error creating test: %v", err)
+		t.Fatalf("error generating token: %v", err)
 	}
+
+	if err = mockRepo.CreateTest(ctx, userID, test); err != nil {
+		t.Fatalf("error creating test: %v", err)
+	}
+
+	foundTest := helperFindTestByTitle(t, test.Title)
 
 	type args struct {
 		id    int
@@ -118,15 +125,35 @@ func TestHandlers_GetTest(t *testing.T) {
 		{
 			name: "Success: Get test",
 			args: args{
-				id:    testID,
+				id:    foundTest.ID,
 				token: token,
 			},
 			want: want{
 				status: http.StatusOK,
 				test: domain.Test{
-					ID:    testID,
-					Title: test.Title,
+					ID:    foundTest.ID,
+					Title: foundTest.Title,
 				},
+			},
+		},
+		{
+			name: "Error: with invalid token",
+			args: args{
+				id:    foundTest.ID,
+				token: "bad token",
+			},
+			want: want{
+				status: http.StatusUnauthorized,
+			},
+		},
+		{
+			name: "No test found",
+			args: args{
+				id:    0,
+				token: token,
+			},
+			want: want{
+				status: http.StatusNotFound,
 			},
 		},
 	}
@@ -141,55 +168,52 @@ func TestHandlers_GetTest(t *testing.T) {
 			r.GET("/api/v1/tests/:id", mockHandlers.authMiddleware, mockHandlers.GetTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
-				var obj map[string]interface{}
-				if err = json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-					t.Errorf("error unmarshalling response: %v", err)
-				}
+				trueStatus := w.Code == tt.want.status
 
-				resTest := obj["test"].(map[string]interface{})
-				if id := int(resTest["id"].(float64)); id != tt.want.test.ID {
-					t.Errorf("error getting test: %v", resTest["id"])
-				}
-
-				resTestID := int(resTest["id"].(float64))
-				resTestTitle := resTest["title"].(string)
-
-				if resTestTitle != tt.want.test.Title {
-					t.Errorf("error getting test: %v", test.Title)
-				}
-
-				t.Cleanup(func() {
-					if w.Code == http.StatusOK {
-						helperDeleteTestByID(t, resTestID)
+				if w.Code == http.StatusOK {
+					var test domain.Test
+					if err = json.Unmarshal(w.Body.Bytes(), &test); err != nil {
+						t.Fatalf("error unmarshalling test: %v", err)
 					}
-				})
 
-				return w.Code == tt.want.status
+					return trueStatus && test.ID == tt.want.test.ID && test.Title == tt.want.test.Title
+				}
+
+				return trueStatus
 			})
 		})
 	}
 
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
-		helperDeleteTestByID(t, testID)
+		helperDeleteTestByID(t, foundTest.ID)
 	})
 }
 
-func TestHandlers_GetAllTestsByUserID(t *testing.T) {
+func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 	ctx := context.Background()
 	user := randomUser()
 
-	userID, err := mockServices.Auth.CreateUser(ctx, user)
-	if err != nil {
-		t.Errorf("error creating user: %v", err)
+	if err := mockServices.Auth.CreateUser(ctx, user); err != nil {
+		t.Fatalf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+	userID, err := findUserIDByEmail(user.Email)
+	if err != nil {
+		t.Fatalf("error finding user: %v", err)
+	}
+
+	duration := time.Duration(1) * time.Minute
+	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
 
 	type args struct {
 		repo             *repository.Repository
 		createByQuantity int
 		params           domain.GetAllTestsRequest
+		token            string
 	}
 	type want struct {
 		createdByQuantity int
@@ -210,6 +234,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 					PageID:   1,
 					PageSize: 10,
 				},
+				token: token,
 			},
 			want: want{
 				createdByQuantity: 10,
@@ -225,6 +250,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 					PageID:   1,
 					PageSize: 10,
 				},
+				token: token,
 			},
 			want: want{
 				createdByQuantity: 10,
@@ -240,6 +266,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 					PageID:   3,
 					PageSize: 10,
 				},
+				token: token,
 			},
 			want: want{
 				createdByQuantity: 2,
@@ -247,7 +274,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 			},
 		},
 		{
-			name: "Fail: Get all tests with invalid pagination",
+			name: "Fail: 0 tests with invalid pagination",
 			args: args{
 				repo:             mockRepo,
 				createByQuantity: 10,
@@ -255,6 +282,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 					PageID:   0,
 					PageSize: -10,
 				},
+				token: token,
 			},
 			want: want{
 				createdByQuantity: 0,
@@ -274,7 +302,7 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests", nil)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			q := req.URL.Query()
 			q.Add("page_id", strconv.Itoa(tt.args.params.PageID))
@@ -282,29 +310,23 @@ func TestHandlers_GetAllTestsByUserID(t *testing.T) {
 			req.URL.RawQuery = q.Encode()
 
 			r := gin.Default()
-			r.GET("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.GetAllTestsByCurrentUser)
+			r.GET("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				if w.Code != tt.want.status {
-					t.Errorf("error getting tests: %v", w.Code)
-				} else {
-					// we need to exit from test if status is not ok, and it's by plan
-					if w.Code == http.StatusBadRequest {
-						return true
-					}
+					t.Fatalf("error getting tests: %v", w.Code)
+				}
+				if w.Code == http.StatusBadRequest {
+					return true
+				}
 
-					res := w.Body.String()
-					obj := make(map[string]interface{})
-					t.Log("response: ", res)
-					err = json.Unmarshal([]byte(res), &obj)
-					if err != nil {
-						t.Errorf("error unmarshalling response: %v", err)
-					}
+				var tests []domain.Test
+				if err := json.Unmarshal(w.Body.Bytes(), &tests); err != nil {
+					t.Errorf("error unmarshalling tests: %v", err)
+				}
 
-					tests := obj["tests"].([]interface{})
-					if len(tests) != tt.want.createdByQuantity {
-						t.Errorf("error getting tests: %v", len(tests))
-					}
+				if len(tests) != tt.want.createdByQuantity {
+					t.Errorf("got %v, want %v", len(tests), tt.want.createdByQuantity)
 				}
 
 				return w.Code == tt.want.status
@@ -327,14 +349,19 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 	ctx := context.Background()
 	user := randomUser()
 
-	userID, err := mockServices.Auth.CreateUser(ctx, user)
-	if err != nil {
-		t.Errorf("error creating user: %v", err)
+	if err := mockServices.Auth.CreateUser(ctx, user); err != nil {
+		t.Fatalf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+	userID, err := findUserIDByEmail(user.Email)
 	if err != nil {
-		t.Errorf("error generating token: %v", err)
+		t.Fatalf("error finding user id: %v", err)
+	}
+
+	duration := time.Duration(1) * time.Second
+	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
 	}
 
 	newTitle := util.RandomString(10)
@@ -418,18 +445,27 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 	ctx := context.Background()
 	user := randomUser()
 
-	userID, err := mockServices.Auth.CreateUser(ctx, user)
-	if err != nil {
-		t.Errorf("error creating user: %v", err)
+	if err := mockServices.Auth.CreateUser(ctx, user); err != nil {
+		t.Fatalf("error creating user: %v", err)
 	}
 
-	token, err := mockServices.Auth.GenerateToken(ctx, user.Email, user.Password)
+	userID, err := findUserIDByEmail(user.Email)
 	if err != nil {
-		t.Errorf("error generating token: %v", err)
+		t.Fatalf("error finding user id: %v", err)
 	}
+
+	duration := time.Duration(1) * time.Second
+	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
+
+	testID1 := helperCreateTest(t, userID, randomTest())
+	testID2 := helperCreateTest(t, userID, randomTest())
 
 	type args struct {
 		token string
+		id    int
 	}
 	type want struct {
 		status int
@@ -443,9 +479,20 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 			name: "Success: Delete test",
 			args: args{
 				token: token,
+				id:    testID2,
 			},
 			want: want{
 				status: http.StatusOK,
+			},
+		},
+		{
+			name: "Fail: Delete test that does not exist",
+			args: args{
+				token: token,
+				id:    2134234234,
+			},
+			want: want{
+				status: http.StatusNotFound,
 			},
 		},
 		{
@@ -459,12 +506,7 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testID := helperCreateTest(t, userID, domain.TestInput{Title: "title"})
-			if testID == 0 {
-				t.Errorf("error creating test: %v", testID)
-			}
-
-			req := httptest.NewRequest(http.MethodDelete, "/api/v1/tests/"+strconv.Itoa(testID), nil)
+			req := httptest.NewRequest(http.MethodDelete, "/api/v1/tests/"+strconv.Itoa(tt.args.id), nil)
 			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			r := gin.Default()
@@ -473,14 +515,12 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.want.status
 			})
-
-			t.Cleanup(func() {
-				helperDeleteTestByID(t, testID)
-			})
 		})
 	}
 
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
+		helperDeleteTestByID(t, testID1)
+		helperDeleteTestByID(t, testID2)
 	})
 }

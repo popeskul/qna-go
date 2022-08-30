@@ -6,23 +6,24 @@ import (
 	"context"
 	"database/sql"
 	"github.com/popeskul/qna-go/internal/domain"
-	"github.com/popeskul/qna-go/internal/repository/auth"
 	"github.com/popeskul/qna-go/internal/repository/tests"
+	"github.com/popeskul/qna-go/internal/repository/user"
 )
 
 // Auth interface is implemented by the auth repository.
 type Auth interface {
-	CreateUser(ctx context.Context, userInput domain.SignUpInput) (int, error)
-	GetUser(ctx context.Context, email, password string) (domain.User, error)
+	CreateUser(ctx context.Context, userInput domain.User) error
+	GetUser(ctx context.Context, email string, password []byte) (domain.User, error)
 	DeleteUserById(ctx context.Context, userID int) error
+	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 }
 
 // Tests interface is implemented by the test repository.
 type Tests interface {
-	CreateTest(ctx context.Context, userID int, testInput domain.TestInput) (int, error)
+	CreateTest(ctx context.Context, userID int, test domain.Test) error
 	GetTest(ctx context.Context, testID int) (domain.Test, error)
-	GetAllTestsByCurrentUser(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
-	UpdateTestById(ctx context.Context, testID int, testInput domain.TestInput) error
+	GetAllTestsByUserID(ctx context.Context, userID int, args domain.GetAllTestsParams) ([]domain.Test, error)
+	UpdateTestById(ctx context.Context, testID int, test domain.Test) error
 	DeleteTestById(ctx context.Context, testID int) error
 }
 
@@ -39,7 +40,7 @@ func NewRepository(db *sql.DB) *Repository {
 	}
 
 	return &Repository{
-		Auth:  auth.NewRepoAuth(db),
+		Auth:  user.NewRepoAuth(db),
 		Tests: tests.NewRepoTests(db),
 	}
 }

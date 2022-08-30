@@ -17,7 +17,7 @@ func TestAuth_SignUp(t *testing.T) {
 	u := randomUser()
 	u2 := randomUser()
 
-	userID := helperCreatUser(t, ctx, u)
+	helperCreatUser(t, ctx, u)
 
 	validJSON, _ := json.Marshal(u2)
 	invalidUniqueEmailJSON, _ := json.Marshal(u)
@@ -54,26 +54,20 @@ func TestAuth_SignUp(t *testing.T) {
 			r.POST("/api/v1/auth/sign-up", mockHandlers.SignUp)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
-				t.Cleanup(func() {
-					var obj map[string]interface{}
-					if err := json.Unmarshal(w.Body.Bytes(), &obj); err != nil {
-						t.Errorf("error unmarshalling response: %v", err)
-					}
-
-					// if user is created, and it has an id
-					// then delete it
-					if obj["id"] != nil {
-						id := int(obj["id"].(float64))
-						helperDeleteUserByID(t, id)
-					}
-				})
-
 				return w.Code == tt.status
+			})
+
+			t.Cleanup(func() {
+				helperDeleteUserByEmail(t, u2.Email)
 			})
 		})
 	}
 
 	t.Cleanup(func() {
+		userID, err := findUserIDByEmail(u.Email)
+		if err != nil {
+			t.Fatalf("failed to find user by email: %v", err)
+		}
 		helperDeleteUserByID(t, userID)
 	})
 }
@@ -82,7 +76,12 @@ func TestAuth_SignIn(t *testing.T) {
 	ctx := context.Background()
 	u := randomUser()
 
-	userID := helperCreatUser(t, ctx, u)
+	helperCreatUser(t, ctx, u)
+
+	userID, err := findUserIDByEmail(u.Email)
+	if err != nil {
+		t.Fatalf("failed to find user by email: %v", err)
+	}
 
 	validJSON, _ := json.Marshal(u)
 	invalidJSON, _ := json.Marshal(randomUser())

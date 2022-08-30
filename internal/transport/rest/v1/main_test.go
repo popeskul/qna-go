@@ -11,6 +11,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"net/http"
@@ -41,8 +42,13 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 
+	pasetoMaker, err := token.NewPasetoMaker(os.Getenv("TOKEN_SYMMETRIC_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo)
+	mockServices = services.NewService(mockRepo, pasetoMaker)
 	mockHandlers = NewHandler(mockServices)
 
 	gin.SetMode(gin.TestMode)
@@ -60,30 +66,29 @@ func testHTTPResponse(t *testing.T, r *gin.Engine, req *http.Request, f func(w *
 	}
 }
 
-func randomUser() domain.SignUpInput {
-	return domain.SignUpInput{
+func randomUser() domain.User {
+	return domain.User{
 		Name:     util.RandomString(10),
 		Email:    util.RandomString(10) + "@gmail.com",
 		Password: util.RandomString(10),
 	}
 }
 
-func randomTest() domain.TestInput {
-	return domain.TestInput{
-		Title: util.RandomString(10),
+func randomTest() domain.Test {
+	return domain.Test{
+		Title:    util.RandomString(10),
+		AuthorID: int(util.RandomInt(1, 100)),
 	}
 }
 
-func helperCreatUser(t *testing.T, ctx context.Context, user domain.SignUpInput) int {
-	id, err := mockServices.CreateUser(ctx, user)
+func helperCreatUser(t *testing.T, ctx context.Context, user domain.User) {
+	err := mockServices.CreateUser(ctx, user)
 	if err != nil {
-		t.Fatalf("Some error occured. Err: %mockServices", err)
+		t.Errorf("error creating user: %v", err)
 	}
-
-	return id
 }
 
-func helperCreateTest(t *testing.T, userID int, test domain.TestInput) int {
+func helperCreateTest(t *testing.T, userID int, test domain.Test) int {
 	t.Helper()
 
 	var id int
@@ -101,11 +106,37 @@ func helperDeleteUserByID(t *testing.T, id int) {
 	}
 }
 
+func helperDeleteUserByEmail(t *testing.T, email string) {
+	t.Helper()
+	if _, err := mockDB.Exec("DELETE FROM users WHERE email = $1", email); err != nil {
+		t.Errorf("error deleting user: %v", err)
+	}
+}
+
 func helperDeleteTestByID(t *testing.T, id int) {
 	t.Helper()
 	if _, err := mockDB.Exec("DELETE FROM tests WHERE id = $1", id); err != nil {
 		t.Errorf("error deleting test: %v", err)
 	}
+}
+
+func helperFindTestByTitle(t *testing.T, title string) domain.Test {
+	t.Helper()
+	var test domain.Test
+	if err := mockDB.QueryRow("SELECT id, title, author_id FROM tests WHERE title = $1", title).Scan(&test.ID, &test.Title, &test.AuthorID); err != nil {
+		t.Errorf("error finding test: %v", err)
+	}
+
+	return test
+}
+
+func findUserIDByEmail(email string) (int, error) {
+	var id int
+	if err := mockDB.QueryRow("SELECT id FROM users WHERE email = $1", email).Scan(&id); err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func newDBConnection(cfg *config.Config) (*sql.DB, error) {
