@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrExpiredToken = fmt.Errorf("token is expired")
-	ErrInvalidToken = fmt.Errorf("invalid token")
+	ErrExpiredToken     = fmt.Errorf("token is expired")
+	ErrInvalidToken     = fmt.Errorf("invalid token")
+	ErrSecretIsTooShort = fmt.Errorf("secret key is too short")
 )
 
 // Payload contains the payload data of the token.

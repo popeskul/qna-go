@@ -2,7 +2,6 @@ package token
 
 import (
 	"errors"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"time"
 )
@@ -16,7 +15,7 @@ type JWTMaker struct {
 // NewJWTMaker returns a new JWTMaker.
 func NewJWTMaker(secretKey string) (Maker, error) {
 	if len(secretKey) < minSecretLength {
-		return nil, fmt.Errorf("secret key is too short")
+		return nil, ErrSecretIsTooShort
 	}
 
 	return &JWTMaker{
