@@ -79,4 +79,6 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           TOKEN_SYMMETRIC_KEY: ${{ secrets.TOKEN_SYMMETRIC_KEY }}
           ACCESS_TOKEN_DURATION: ${{ secrets.ACCESS_TOKEN_DURATION }}
+          HASH_SALT: ${{ secrets.HASH_SALT }}
+          SESSION_HOUR_TTL: ${{ secrets.SESSION_HOUR_TTL }}
         run: go test -v ./...
