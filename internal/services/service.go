@@ -4,6 +4,7 @@ package services
 import (
 	"context"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services/tests"
 	"github.com/popeskul/qna-go/internal/services/user"
@@ -13,8 +14,10 @@ import (
 // Auth interface is implemented by auth service.
 type Auth interface {
 	CreateUser(ctx context.Context, userInput domain.User) error
+	SignIn(ctx context.Context, userInput domain.User) (string, error)
 	GetUser(ctx context.Context, email string, password []byte) (domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+	VerifyToken(ctx context.Context, token string) (*token.Payload, error)
 }
 
 // Tests interface is implemented by tests service.
@@ -30,14 +33,12 @@ type Tests interface {
 type Service struct {
 	Auth
 	Tests
-	TokenMaker token.Maker
 }
 
 // NewService creates a new service with all services.
-func NewService(repo *repository.Repository, tokenMaker token.Maker) *Service {
+func NewService(repo *repository.Repository, tokenManager token.Manager, hashManager *hash.Manager) *Service {
 	return &Service{
-		Auth:       user.NewServiceAuth(repo),
-		Tests:      tests.NewServiceTests(repo),
-		TokenMaker: tokenMaker,
+		Auth:  user.NewServiceAuth(repo, tokenManager, hashManager),
+		Tests: tests.NewServiceTests(repo),
 	}
 }

@@ -9,6 +9,7 @@ import (
 var (
 	ErrTestNotFound = errors.New("test id is required")
 	ErrPermission   = errors.New("permission denied")
+	CookieName      = "session_token"
 )
 
 // errorResponse is the error response

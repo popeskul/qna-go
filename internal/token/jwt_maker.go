@@ -13,7 +13,7 @@ type JWTMaker struct {
 }
 
 // NewJWTMaker returns a new JWTMaker.
-func NewJWTMaker(secretKey string) (Maker, error) {
+func NewJWTMaker(secretKey string) (Manager, error) {
 	if len(secretKey) < minSecretLength {
 		return nil, ErrSecretIsTooShort
 	}

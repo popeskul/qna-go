@@ -8,7 +8,7 @@ import (
 
 func TestPasetoMaker(t *testing.T) {
 	userID := 1
-	pasetoMaker, err := NewPasetoMaker(util.RandomString(32))
+	pasetoMaker, err := NewPasetoManager(util.RandomString(32))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestPasetoMaker(t *testing.T) {
 }
 
 func TestExpiredPasetoToken(t *testing.T) {
-	pasetoMaker, err := NewPasetoMaker(util.RandomString(32))
+	pasetoMaker, err := NewPasetoManager(util.RandomString(32))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,7 +10,9 @@ import (
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
@@ -41,8 +43,18 @@ func TestMain(m *testing.M) {
 	}
 	defer mockDB.Close()
 
+	pasetoMaker, err := token.NewPasetoManager(cfg.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hashManager, err := hash.NewHash(cfg.HashSalt)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mockRepo = repository.NewRepository(mockDB)
-	mockService = NewServiceAuth(mockRepo)
+	mockService = NewServiceAuth(mockRepo, pasetoMaker, hashManager)
 
 	os.Exit(m.Run())
 }
@@ -87,7 +99,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := NewServiceAuth(tt.fields.repo).CreateUser(ctx, tt.args.input)
+			err := mockService.CreateUser(ctx, tt.args.input)
 			if err != nil {
 				if !strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
@@ -162,8 +174,7 @@ func TestServiceAuth_GetUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServiceAuth(tt.fields.repo)
-			got, err := s.GetUser(ctx, tt.args.email, tt.args.password)
+			got, err := mockService.GetUser(ctx, tt.args.email, tt.args.password)
 
 			if err != nil {
 				if tt.want != nil && tt.want.Email != got.Email {
@@ -226,6 +237,8 @@ func loadConfig() (*config.Config, error) {
 		return nil, err
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
+	cfg.HashSalt = os.Getenv("HASH_SALT")
 
 	return cfg, nil
 }

@@ -16,6 +16,7 @@ type Config struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"server"`
 	TokenSymmetricKey string `mapstructure:"token_symmetric_key"`
+	HashSalt          string `mapstructure:"hash_salt"`
 }
 
 // Postgres represents postgres config.

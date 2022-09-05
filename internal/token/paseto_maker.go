@@ -6,26 +6,26 @@ import (
 	"time"
 )
 
-// PasetoMaker is a paseto maker.
-type PasetoMaker struct {
+// PasetoManager is a paseto maker.
+type PasetoManager struct {
 	paseto        *paseto.V2
 	symmetrickKey []byte
 }
 
-// NewPasetoMaker create new paseto maker with symmetric key and return paseto maker and error if any.
-func NewPasetoMaker(symmetrickKey string) (Maker, error) {
+// NewPasetoManager create new paseto maker with symmetric key and return paseto maker and error if any.
+func NewPasetoManager(symmetrickKey string) (Manager, error) {
 	if len(symmetrickKey) < chacha20poly1305.KeySize {
 		return nil, ErrSecretIsTooShort
 	}
 
-	return &PasetoMaker{
+	return &PasetoManager{
 		paseto:        paseto.NewV2(),
 		symmetrickKey: []byte(symmetrickKey),
 	}, nil
 }
 
 // CreateToken create new token and return token and error if any.
-func (maker *PasetoMaker) CreateToken(userID int, duration time.Duration) (string, error) {
+func (maker *PasetoManager) CreateToken(userID int, duration time.Duration) (string, error) {
 	payload, err := NewPayload(userID, duration)
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func (maker *PasetoMaker) CreateToken(userID int, duration time.Duration) (strin
 }
 
 // VerifyToken verify token and return payload and error if any.
-func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
+func (maker *PasetoManager) VerifyToken(token string) (*Payload, error) {
 	payload := &Payload{}
 	err := maker.paseto.Decrypt(token, maker.symmetrickKey, payload, nil)
 	if err != nil {
