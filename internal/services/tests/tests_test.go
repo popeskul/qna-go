@@ -67,7 +67,7 @@ func TestServiceTests_CreateTest(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Success: Create test",
+			name: "Success: CreateRefreshToken test",
 			args: args{
 				repo:   mockRepo,
 				input:  u,

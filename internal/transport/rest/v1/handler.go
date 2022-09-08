@@ -2,6 +2,7 @@
 package v1
 
 import (
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/services"
 )
@@ -9,12 +10,14 @@ import (
 // Handlers defines handlers for v1
 type Handlers struct {
 	service *services.Service
+	store   cookie.Store
 }
 
 // NewHandler creates a new Handlers with the necessary dependencies.
-func NewHandler(service *services.Service) *Handlers {
+func NewHandler(service *services.Service, store cookie.Store) *Handlers {
 	return &Handlers{
 		service: service,
+		store:   store,
 	}
 }
 
@@ -24,6 +27,7 @@ func (h *Handlers) Init(api *gin.RouterGroup) *gin.RouterGroup {
 	{
 		authAPI.POST("/sign-up", h.SignUp)
 		authAPI.POST("/sign-in", h.SignIn)
+		authAPI.GET("/refresh", h.Refresh)
 	}
 
 	testsAPI := api.Group("/tests", h.authMiddleware)

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"database/sql"
+	sessionsPostgres "github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
@@ -11,6 +12,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/util"
@@ -21,11 +23,13 @@ import (
 	"testing"
 )
 
-var mockDB *sql.DB
-var mockRepo *repository.Repository
-var mockHandlers *Handlers
-var mockServices *services.Service
-var cfg *config.Config
+var (
+	mockDB       *sql.DB
+	mockRepo     *repository.Repository
+	mockHandlers *Handlers
+	mockServices *services.Service
+	cfg          *config.Config
+)
 
 func TestMain(m *testing.M) {
 	if err := util.ChangeDir("../../"); err != nil {
@@ -54,9 +58,15 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	store, err := sessionsPostgres.NewStore(db, []byte(cfg.Session.Secret))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager)
-	mockHandlers = NewHandler(mockServices)
+	sessionManager := sessions.NewRepoSessions(db)
+	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, sessionManager)
+	mockHandlers = NewHandler(mockServices, store)
 
 	gin.SetMode(gin.TestMode)
 
@@ -127,6 +137,13 @@ func helperDeleteTestByID(t *testing.T, id int) {
 	}
 }
 
+func helperDeleteRefreshTokenByToken(t *testing.T, token string) {
+	t.Helper()
+	if _, err := mockDB.Exec("DELETE FROM refresh_tokens WHERE token = $1", token); err != nil {
+		t.Errorf("error deleting refresh token: %v", err)
+	}
+}
+
 func helperFindTestByTitle(t *testing.T, title string) domain.Test {
 	t.Helper()
 	var test domain.Test
@@ -169,6 +186,7 @@ func loadConfig() (*config.Config, error) {
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
 	cfg.HashSalt = os.Getenv("HASH_SALT")
+	cfg.Session.Secret = os.Getenv("SESSION_SECRET")
 
 	return cfg, nil
 }

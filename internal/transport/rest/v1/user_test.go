@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
@@ -115,6 +116,7 @@ func TestAuth_SignIn(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			r := gin.Default()
+			r.Use(sessions.Sessions("session", mockHandlers.store))
 			r.POST("/api/v1/auth/sign-in", mockHandlers.SignIn)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {

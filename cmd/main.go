@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/popeskul/qna-go/internal/hash"
-	"github.com/popeskul/qna-go/internal/token"
+	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"log"
 	"net/http"
 	"os"
@@ -12,14 +11,17 @@ import (
 	"syscall"
 	"time"
 
+	sessionsPostgres "github.com/gin-contrib/sessions/postgres"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
+	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/server"
 	"github.com/popeskul/qna-go/internal/services"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/transport/rest"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -60,9 +62,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	store, err := sessionsPostgres.NewStore(db, []byte(cfg.Session.Secret))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sessionManager := sessions.NewRepoSessions(db)
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenManager, hashManager)
-	handlers := rest.NewHandler(service)
+	service := services.NewService(repo, tokenManager, hashManager, sessionManager)
+	handlers := rest.NewHandler(service, store)
 
 	srv := server.NewServer(&http.Server{
 		Addr:           fmt.Sprintf(":%d", cfg.Server.Port),
@@ -107,6 +116,7 @@ func initConfig() (*config.Config, error) {
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
 	cfg.HashSalt = os.Getenv("HASH_SALT")
+	cfg.Session.Secret = os.Getenv("SESSION_SECRET")
 
 	return cfg, nil
 }

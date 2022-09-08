@@ -46,3 +46,13 @@ CREATE TABLE tests
     created_at TIMESTAMP NOT NULL DEFAULT (now()),
     updated_at TIMESTAMP NOT NULL DEFAULT (now())
 );
+
+CREATE TABLE refresh_tokens
+(
+    id SERIAL NOT NULL UNIQUE,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    expires_at TIMESTAMP NOT NULL NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT (now()),
+    updated_at TIMESTAMP NOT NULL DEFAULT (now())
+);

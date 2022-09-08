@@ -6,6 +6,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/services/tests"
 	"github.com/popeskul/qna-go/internal/services/user"
 	"github.com/popeskul/qna-go/internal/token"
@@ -14,10 +15,17 @@ import (
 // Auth interface is implemented by auth service.
 type Auth interface {
 	CreateUser(ctx context.Context, userInput domain.User) error
-	SignIn(ctx context.Context, userInput domain.User) (string, error)
+	SignIn(ctx context.Context, userInput domain.User) (string, string, error)
 	GetUser(ctx context.Context, email string, password []byte) (domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	VerifyToken(ctx context.Context, token string) (*token.Payload, error)
+	GenerateAccessRefreshTokens(ctx context.Context, token string) (string, string, error)
+}
+
+// Sessions interface is implemented by sessions' repository.
+type Sessions interface {
+	CreateRefreshToken(ctx context.Context, token domain.RefreshSession) error
+	GetRefreshToken(ctx context.Context, token string) (domain.RefreshSession, error)
 }
 
 // Tests interface is implemented by tests service.
@@ -33,12 +41,13 @@ type Tests interface {
 type Service struct {
 	Auth
 	Tests
+	Sessions
 }
 
 // NewService creates a new service with all services.
-func NewService(repo *repository.Repository, tokenManager token.Manager, hashManager *hash.Manager) *Service {
+func NewService(repo *repository.Repository, tokenManager token.Manager, hashManager *hash.Manager, sessionManager *sessions.RepositorySessions) *Service {
 	return &Service{
-		Auth:  user.NewServiceAuth(repo, tokenManager, hashManager),
+		Auth:  user.NewServiceAuth(repo, tokenManager, hashManager, sessionManager),
 		Tests: tests.NewServiceTests(repo),
 	}
 }

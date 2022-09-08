@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/repository/tests"
 	"github.com/popeskul/qna-go/internal/repository/user"
 )
@@ -27,10 +28,17 @@ type Tests interface {
 	DeleteTestById(ctx context.Context, testID int) error
 }
 
+// Sessions interface is implemented by the sessions' repository.
+type Sessions interface {
+	CreateRefreshToken(ctx context.Context, token domain.RefreshSession) error
+	GetRefreshToken(ctx context.Context, token string) (domain.RefreshSession, error)
+}
+
 // Repository is the composite of all repositories.
 type Repository struct {
 	Auth
 	Tests
+	Sessions
 }
 
 // NewRepository returns a new instance of the repository.
@@ -40,7 +48,8 @@ func NewRepository(db *sql.DB) *Repository {
 	}
 
 	return &Repository{
-		Auth:  user.NewRepoAuth(db),
-		Tests: tests.NewRepoTests(db),
+		Auth:     user.NewRepoAuth(db),
+		Tests:    tests.NewRepoTests(db),
+		Sessions: sessions.NewRepoSessions(db),
 	}
 }

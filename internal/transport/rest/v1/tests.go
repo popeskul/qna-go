@@ -27,6 +27,10 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 		newErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
 	}
+	if userId == 0 {
+		newErrorResponse(c, http.StatusBadRequest, "user id is required")
+		return
+	}
 
 	var test domain.Test
 	if err = c.ShouldBindJSON(&test); err != nil {
@@ -83,6 +87,10 @@ func (h *Handlers) GetAllTestsByUserID(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	if userID == 0 {
+		newErrorResponse(c, http.StatusBadRequest, "user id is required")
 		return
 	}
 
