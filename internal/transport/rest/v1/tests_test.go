@@ -58,17 +58,11 @@ func TestHandlers_CreateTests(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/tests", bytes.NewReader(tt.test))
 			req.Header.Set("Content-Type", "application/json")
-			//req.Header.Set("Authorization", "Bearer "+accessToken)
-			req.Header.Set("Authorization", "Bearer "+accessToken)
 
 			r := gin.Default()
 			r.Use(sessions.Sessions("session", mockHandlers.store))
 
-			r.POST("/api/v1/tests", func(c *gin.Context) {
-				session := sessions.Default(c)
-				session.Set(accessTokenName, accessToken)
-				session.Save()
-			}, mockHandlers.authMiddleware, mockHandlers.CreateTest)
+			r.POST("/api/v1/tests", setSessionMiddleware(t, accessToken), mockHandlers.authMiddleware, mockHandlers.CreateTest)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Cleanup(func() {
@@ -120,8 +114,8 @@ func TestHandlers_GetTestByID(t *testing.T) {
 	foundTest := helperFindTestByTitle(t, test.Title)
 
 	type args struct {
-		id          int
-		accessToken string
+		id    int
+		token string
 	}
 	type want struct {
 		status int
@@ -135,8 +129,8 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		{
 			name: "Success: GetRefreshToken test",
 			args: args{
-				id:          foundTest.ID,
-				accessToken: accessToken,
+				id:    foundTest.ID,
+				token: accessToken,
 			},
 			want: want{
 				status: http.StatusOK,
@@ -149,8 +143,8 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		{
 			name: "Error: with invalid accessToken",
 			args: args{
-				id:          foundTest.ID,
-				accessToken: "bad accessToken",
+				id:    foundTest.ID,
+				token: "bad accessToken",
 			},
 			want: want{
 				status: http.StatusUnauthorized,
@@ -159,8 +153,8 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		{
 			name: "No test found",
 			args: args{
-				id:          0,
-				accessToken: accessToken,
+				id:    0,
+				token: accessToken,
 			},
 			want: want{
 				status: http.StatusNotFound,
@@ -172,15 +166,10 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests/"+strconv.Itoa(tt.args.id), nil)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.accessToken)
 
 			r := gin.Default()
 			r.Use(sessions.Sessions("session", mockHandlers.store))
-			r.GET("/api/v1/tests/:id", func(c *gin.Context) {
-				session := sessions.Default(c)
-				session.Set(accessTokenName, tt.args.accessToken)
-				session.Save()
-			}, mockHandlers.authMiddleware, mockHandlers.GetTestByID)
+			r.GET("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.GetTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				trueStatus := w.Code == tt.want.status
@@ -318,7 +307,6 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests", nil)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			q := req.URL.Query()
 			q.Add("page_id", strconv.Itoa(tt.args.params.PageID))
@@ -327,11 +315,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 
 			r := gin.Default()
 			r.Use(sessions.Sessions("session", mockHandlers.store))
-			r.GET("/api/v1/tests", func(c *gin.Context) {
-				session := sessions.Default(c)
-				session.Set(accessTokenName, tt.args.token)
-				session.Save()
-			}, mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
+			r.GET("/api/v1/tests", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Log(w.Body.String())
@@ -448,15 +432,10 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPut, "/api/v1/tests/"+strconv.Itoa(tt.args.id), bytes.NewReader(tt.args.input))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			r := gin.Default()
 			r.Use(sessions.Sessions("session", mockHandlers.store))
-			r.PUT("/api/v1/tests/:id", func(c *gin.Context) {
-				session := sessions.Default(c)
-				session.Set(accessTokenName, tt.args.token)
-				session.Save()
-			}, mockHandlers.authMiddleware, mockHandlers.UpdateTestByID)
+			r.PUT("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.UpdateTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.want.status
@@ -544,11 +523,7 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 
 			r := gin.Default()
 			r.Use(sessions.Sessions("session", mockHandlers.store))
-			r.DELETE("/api/v1/tests/:id", func(c *gin.Context) {
-				session := sessions.Default(c)
-				session.Set(accessTokenName, tt.args.token)
-				session.Save()
-			}, mockHandlers.authMiddleware, mockHandlers.DeleteTestByID)
+			r.DELETE("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.DeleteTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.want.status
@@ -562,4 +537,14 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		helperDeleteTestByID(t, testID2)
 		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
+}
+
+func setSessionMiddleware(t *testing.T, token string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set(accessTokenName, token)
+		if err := session.Save(); err != nil {
+			t.Fatalf("error saving session: %v", err)
+		}
+	}
 }
