@@ -2,3 +2,4 @@
 .env
 .DS_Store
 bin/golangci-lint
+*.log

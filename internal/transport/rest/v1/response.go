@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,6 +13,11 @@ type errorResponse struct {
 
 // newErrorResponse creates a new error response and logs the error message
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
-	logrus.Error(message)
+	logger := logger.GetLogger()
+	logger.WithFields(logrus.Fields{
+		"url":    c.Request.URL.String(),
+		"method": c.Request.Method,
+	}).Error(message)
+
 	c.AbortWithStatusJSON(statusCode, errorResponse{message})
 }
