@@ -43,7 +43,7 @@ func TestHandlers_CreateTests(t *testing.T) {
 		status int
 	}{
 		{
-			name:   "Success: CreateRefreshToken test",
+			name:   "Success: Create test",
 			test:   validJSON,
 			status: http.StatusCreated,
 		},
@@ -231,7 +231,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Success: GetRefreshToken all tests with default pagination",
+			name: "Success: Get all tests with default pagination",
 			args: args{
 				repo:             mockRepo,
 				createByQuantity: 10,
@@ -247,7 +247,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 			},
 		},
 		{
-			name: "Success: GetRefreshToken 1 page of tests but in db there are more than 10 tests",
+			name: "Success: Get 1 page of tests but in db there are more than 10 tests",
 			args: args{
 				repo:             mockRepo,
 				createByQuantity: 12,
