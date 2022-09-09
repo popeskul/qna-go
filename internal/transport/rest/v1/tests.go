@@ -21,6 +21,19 @@ type Tests interface {
 	DeleteTestByID(ctx context.Context, id int) error
 }
 
+// CreateTest godoc
+// @Summary Create test
+// @Security ApiKeyAuth
+// @Tags tests
+// @Description Create test
+// @ID create-test
+// @Accept  json
+// @Produce  json
+// @Param test body domain.Test true "test"
+// @Success 201
+// @Failure 400,401 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /tests [post]
 func (h *Handlers) CreateTest(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
@@ -35,7 +48,7 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 	}
 
 	if test.Title == "" {
-		newErrorResponse(c, http.StatusBadRequest, ErrTestNotFound.Error())
+		newErrorResponse(c, http.StatusBadRequest, "title is required")
 		return
 	}
 
@@ -47,6 +60,19 @@ func (h *Handlers) CreateTest(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// GetTestByID godoc
+// @Summary Get test by id
+// @Tags tests
+// @Security ApiKeyAuth
+// @Description Get test by id
+// @ID get-test-by-id
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Success 200 {object} domain.Test
+// @Failure 400,401,404 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /tests/{id} [get]
 func (h *Handlers) GetTestByID(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
@@ -72,13 +98,27 @@ func (h *Handlers) GetTestByID(c *gin.Context) {
 	}
 
 	if test.AuthorID != userId {
-		newErrorResponse(c, http.StatusUnauthorized, ErrPermission.Error())
+		newErrorResponse(c, http.StatusUnauthorized, "you are not allowed to get this test")
 		return
 	}
 
 	c.JSON(http.StatusOK, test)
 }
 
+// GetAllTestsByUserID godoc
+// @Summary Get all tests by current user
+// @Tags tests
+// @Security ApiKeyAuth
+// @Description Get all tests by current user
+// @ID get-all-tests-by-current-user
+// @Accept  json
+// @Produce  json
+// @Param page_id query int false "page id"
+// @Param page_size query int false "page size"
+// @Success 200 {object} []domain.Test
+// @Failure 400,401,404 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /tests [get]
 func (h *Handlers) GetAllTestsByUserID(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
@@ -111,6 +151,20 @@ func (h *Handlers) GetAllTestsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, tests)
 }
 
+// UpdateTestByID godoc
+// @Summary Update test by id
+// @Tags tests
+// @Security ApiKeyAuth
+// @Description Update test by id
+// @ID update-test-by-id
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Param test body domain.Test true "test"
+// @Success 200
+// @Failure 401 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /tests/{id} [put]
 func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	testID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -132,6 +186,19 @@ func (h *Handlers) UpdateTestByID(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// DeleteTestByID godoc
+// @Summary Delete test by id
+// @Tags tests
+// @Description Delete test by id
+// @ID delete-test-by-id
+// @Security ApiKeyAuth
+// @Accept  json
+// @Produce  json
+// @Param id path int true "id"
+// @Success 200
+// @Failure 400,401,404 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /tests/{id} [delete]
 func (h *Handlers) DeleteTestByID(c *gin.Context) {
 	testID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
