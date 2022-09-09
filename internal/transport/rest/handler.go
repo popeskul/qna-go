@@ -4,8 +4,8 @@ package rest
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/docs"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/services"
 	v1 "github.com/popeskul/qna-go/internal/transport/rest/v1"
 	swaggerfiles "github.com/swaggo/files"
