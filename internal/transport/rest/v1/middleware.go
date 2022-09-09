@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/token"
 	"net/http"
+	"time"
 )
 
 const (
@@ -41,6 +42,13 @@ func (h *Handlers) authMiddleware(c *gin.Context) {
 	}
 
 	c.Set(authorizationPayloadKey, payload)
+	c.Next()
+}
+
+// loggingMiddleware is a middleware that logs the request.
+func (h *Handlers) loggingMiddleware(c *gin.Context) {
+	h.logger.Infof("%s: [%s] - %s ", time.Now().Format(time.RFC3339), c.Request.Method, c.Request.URL.String())
+
 	c.Next()
 }
 

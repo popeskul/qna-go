@@ -6,11 +6,13 @@ import (
 	sessionsPostgres "github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/popeskul/cache"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/services"
@@ -21,6 +23,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
 var (
@@ -63,10 +66,17 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	mockRepo = repository.NewRepository(db)
+	d, err := time.ParseDuration(cfg.Cache.TTL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cache := cache.New(d)
+
 	sessionManager := sessions.NewRepoSessions(db)
-	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, sessionManager)
-	mockHandlers = NewHandler(mockServices, store)
+
+	mockRepo = repository.NewRepository(db)
+	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, cache, sessionManager)
+	mockHandlers = NewHandler(mockServices, store, logger.GetLogger())
 
 	gin.SetMode(gin.TestMode)
 

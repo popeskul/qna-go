@@ -16,6 +16,9 @@ type Config struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"server"`
 	TokenSymmetricKey string `mapstructure:"token_symmetric_key"`
+	Cache             struct {
+		TTL string `mapstructure:"ttl"`
+	}
 	HashSalt          string `mapstructure:"hash_salt"`
 	Session           struct {
 		Secret string `mapstructure:"secret"`
@@ -48,6 +51,10 @@ func New(folder, filename string) (*Config, error) {
 	}
 
 	if err := envconfig.Process("db", cfg); err != nil {
+		return nil, err
+	}
+
+	if err := envconfig.Process("cache", cfg); err != nil {
 		return nil, err
 	}
 
