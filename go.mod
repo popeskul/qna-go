@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/o1egl/paseto v1.0.0
 	github.com/pkg/errors v0.9.1
+	github.com/popeskul/cache v0.0.0-20220830065534-c6634fe670c8
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a

@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/popeskul/qna-go/internal/logger"
-	"github.com/popeskul/qna-go/internal/token"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,12 +11,16 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
+	"github.com/popeskul/cache"
+
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/server"
 	"github.com/popeskul/qna-go/internal/services"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/transport/rest"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -64,8 +66,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	d, err := time.ParseDuration(cfg.Cache.TTL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cache := cache.New(d)
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenMaker)
+	service := services.NewService(repo, tokenMaker, cache)
 	handlers := rest.NewHandler(service, log)
 
 	srv := server.NewServer(&http.Server{
