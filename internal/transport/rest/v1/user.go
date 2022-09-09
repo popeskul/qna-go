@@ -16,6 +16,18 @@ type Auth interface {
 	SignIn(ctx context.Context, user domain.User) error
 }
 
+// SignUp godoc
+// @Summary Sign up
+// @Tags auth
+// @Description Sign up
+// @ID sign-up
+// @Accept  json
+// @Produce  json
+// @Param user body domain.User true "user"
+// @Success 201
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /sign-up [post]
 func (h *Handlers) SignUp(c *gin.Context) {
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -31,6 +43,18 @@ func (h *Handlers) SignUp(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// SignIn godoc
+// @Summary Sign in
+// @Tags auth
+// @Description Sign in
+// @ID sign-in
+// @Accept  json
+// @Produce  json
+// @Param user body domain.User true "user"
+// @Success 200 {string} string "access_token"
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /sign-in [post]
 func (h *Handlers) SignIn(c *gin.Context) {
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {

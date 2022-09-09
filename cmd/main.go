@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/popeskul/qna-go/internal/hash"
-	"github.com/popeskul/qna-go/internal/token"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,12 +12,16 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
+	"github.com/popeskul/cache"
+
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/server"
 	"github.com/popeskul/qna-go/internal/services"
+	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/transport/rest"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -27,10 +29,20 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @title Qna API
+// @version 1.0
+// @description Qna API
+// @host localhost:8080
+// @basePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
+	log := logger.GetLogger()
+
 	cfg, err := initConfig()
 	if err != nil {
-		log.Fatalf("failed to init config: %v", err)
+		log.Fatal(err)
 	}
 
 	if err = runMigration(cfg); err != nil {
@@ -60,9 +72,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	d, err := time.ParseDuration(cfg.Cache.TTL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cache := cache.New(d)
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenManager, hashManager)
-	handlers := rest.NewHandler(service)
+	service := services.NewService(repo, tokenManager, hashManager, cache)
+	handlers := rest.NewHandler(service, log)
 
 	srv := server.NewServer(&http.Server{
 		Addr:           fmt.Sprintf(":%d", cfg.Server.Port),

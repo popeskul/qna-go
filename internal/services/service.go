@@ -3,6 +3,7 @@ package services
 
 import (
 	"context"
+	"github.com/popeskul/cache"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
@@ -33,12 +34,15 @@ type Tests interface {
 type Service struct {
 	Auth
 	Tests
+	TokenMaker token.Manager
+	Cache      *cache.Cache
 }
 
 // NewService creates a new service with all services.
-func NewService(repo *repository.Repository, tokenManager token.Manager, hashManager *hash.Manager) *Service {
+func NewService(repo *repository.Repository, tokenMaker token.Manager, hashManager *hash.Manager, cache *cache.Cache) *Service {
 	return &Service{
-		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager),
-		Tests: tests.NewServiceTests(repo),
+		Auth:       auth.NewServiceAuth(repo, tokenMaker, hashManager),
+		Tests:      tests.NewServiceTests(repo, cache),
+		TokenMaker: tokenMaker,
 	}
 }

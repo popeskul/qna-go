@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/popeskul/cache"
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services"
@@ -19,6 +21,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
 var mockDB *sql.DB
@@ -54,9 +57,15 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	d, err := time.ParseDuration(cfg.Cache.TTL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cache := cache.New(d)
+
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager)
-	mockHandlers = NewHandler(mockServices)
+	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, cache)
+	mockHandlers = NewHandler(mockServices, logger.GetLogger())
 
 	gin.SetMode(gin.TestMode)
 
