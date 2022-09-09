@@ -6,8 +6,8 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/services/auth"
 	"github.com/popeskul/qna-go/internal/services/tests"
-	"github.com/popeskul/qna-go/internal/services/user"
 	"github.com/popeskul/qna-go/internal/token"
 )
 
@@ -38,7 +38,7 @@ type Service struct {
 // NewService creates a new service with all services.
 func NewService(repo *repository.Repository, tokenManager token.Manager, hashManager *hash.Manager) *Service {
 	return &Service{
-		Auth:  user.NewServiceAuth(repo, tokenManager, hashManager),
+		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager),
 		Tests: tests.NewServiceTests(repo),
 	}
 }

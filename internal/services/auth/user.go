@@ -1,5 +1,5 @@
 // Package user is a service with all business logic.
-package user
+package auth
 
 import (
 	"context"
