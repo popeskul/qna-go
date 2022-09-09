@@ -1,7 +1,6 @@
 package token
 
 import (
-	"fmt"
 	"github.com/o1egl/paseto"
 	"golang.org/x/crypto/chacha20poly1305"
 	"time"
@@ -16,7 +15,7 @@ type PasetoMaker struct {
 // NewPasetoMaker create new paseto maker with symmetric key and return paseto maker and error if any.
 func NewPasetoMaker(symmetrickKey string) (Maker, error) {
 	if len(symmetrickKey) < chacha20poly1305.KeySize {
-		return nil, fmt.Errorf("symmetric key is too short")
+		return nil, ErrSecretIsTooShort
 	}
 
 	return &PasetoMaker{

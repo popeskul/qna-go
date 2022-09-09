@@ -10,6 +10,7 @@ import (
 	"github.com/popeskul/qna-go/internal/db"
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
+	"github.com/popeskul/qna-go/internal/logger"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/token"
@@ -57,7 +58,7 @@ func TestMain(m *testing.M) {
 
 	mockRepo = repository.NewRepository(db)
 	mockServices = services.NewService(mockRepo, pasetoMaker, cache)
-	mockHandlers = NewHandler(mockServices)
+	mockHandlers = NewHandler(mockServices, logger.GetLogger())
 
 	gin.SetMode(gin.TestMode)
 
