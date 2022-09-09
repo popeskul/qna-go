@@ -26,6 +26,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @title Qna API
+// @version 1.0
+// @description Qna API
+// @host localhost:8080
+// @basePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg, err := initConfig()
 	if err != nil {

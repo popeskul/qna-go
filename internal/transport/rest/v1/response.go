@@ -1,14 +1,8 @@
 package v1
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-)
-
-var (
-	ErrTestNotFound = errors.New("test id is required")
-	ErrPermission   = errors.New("permission denied")
 )
 
 // errorResponse is the error response
