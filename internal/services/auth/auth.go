@@ -34,9 +34,8 @@ func NewServiceAuth(repo repository.Auth, tokenManger token.Manager, hashManager
 
 // CreateUser create new user in db and return error if any.
 func (s *ServiceAuth) CreateUser(ctx context.Context, user domain.User) error {
-	foundUser, err := s.GetUserByEmail(ctx, user.Email)
-	if err != nil && foundUser.Email == user.Email {
-		return err
+	if _, err := s.GetUserByEmail(ctx, user.Email); err == nil {
+		return errors.New("user with this email already exists")
 	}
 
 	hashedPassword, err := s.hashManager.HashPassword(user.Password)
