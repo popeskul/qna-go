@@ -11,6 +11,7 @@ import (
 	"github.com/popeskul/qna-go/internal/db/postgres"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/logger"
+	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/token"
@@ -27,6 +28,7 @@ var mockDB *sql.DB
 var mockRepo *repository.Repository
 var mockHandlers *Handlers
 var mockServices *services.Service
+var cfg *config.Config
 
 func TestMain(m *testing.M) {
 	if err := util.ChangeDir("../../"); err != nil {
@@ -45,7 +47,12 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 
-	pasetoMaker, err := token.NewPasetoMaker(os.Getenv("TOKEN_SYMMETRIC_KEY"))
+	pasetoMaker, err := token.NewPasetoManager(cfg.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hashManager, err := hash.NewHash(cfg.HashSalt)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +64,7 @@ func TestMain(m *testing.M) {
 	cache := cache.New(d)
 
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo, pasetoMaker, cache)
+	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, cache)
 	mockHandlers = NewHandler(mockServices, logger.GetLogger())
 
 	gin.SetMode(gin.TestMode)
@@ -169,6 +176,8 @@ func loadConfig() (*config.Config, error) {
 		return nil, err
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
+	cfg.HashSalt = os.Getenv("HASH_SALT")
 
 	return cfg, nil
 }

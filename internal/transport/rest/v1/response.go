@@ -6,6 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	CookieName      = "session_token"
+)
+
 // errorResponse is the error response
 type errorResponse struct {
 	Message string `json:"message"`

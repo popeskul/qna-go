@@ -31,7 +31,7 @@ func (h *Handlers) authMiddleware(c *gin.Context) {
 		return
 	}
 
-	payload, err := h.service.TokenMaker.VerifyToken(tokenFromRequest)
+	payload, err := h.service.Auth.VerifyToken(c, tokenFromRequest)
 	if err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, ErrInvalidAuthHeader.Error())
 		return

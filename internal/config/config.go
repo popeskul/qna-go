@@ -19,6 +19,7 @@ type Config struct {
 	Cache             struct {
 		TTL string `mapstructure:"ttl"`
 	}
+	HashSalt          string `mapstructure:"hash_salt"`
 }
 
 // Postgres represents postgres config.

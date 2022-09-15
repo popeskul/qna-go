@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
-	"github.com/popeskul/qna-go/internal/util"
 	"net/http"
 	"os"
 	"time"
@@ -14,7 +13,7 @@ import (
 // Auth interface is implemented by the service.
 type Auth interface {
 	SignUp(ctx context.Context, user domain.User) error
-	SignIn(ctx context.Context, user domain.User) (domain.User, error)
+	SignIn(ctx context.Context, user domain.User) error
 }
 
 // SignUp godoc
@@ -35,13 +34,6 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	password, err := util.HashPassword(user.Password)
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	user.Password = password
 
 	if err := h.service.Auth.CreateUser(c, user); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -70,25 +62,33 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.Auth.GetUserByEmail(c, user.Email)
+	accessToken, err := h.service.Auth.SignIn(c, user)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	duration, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_DURATION"))
-	if err != nil {
+	if err = updateCookie(c, accessToken); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	accessToken, err := h.service.TokenMaker.CreateToken(user.ID, duration)
+	c.Status(http.StatusOK)
+}
+
+func updateCookie(c *gin.Context, accessToken string) error {
+	sessionTTL, err := time.ParseDuration(os.Getenv("SESSION_HOUR_TTL"))
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return err
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token": accessToken,
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     CookieName,
+		Value:    accessToken,
+		Path:     "/",
+		MaxAge:   int(sessionTTL),
+		HttpOnly: true,
 	})
+
+	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/popeskul/qna-go/internal/hash"
 	"net/http"
 	"os"
 	"os/signal"
@@ -61,7 +62,12 @@ func main() {
 	}
 	defer db.Close()
 
-	tokenMaker, err := token.NewPasetoMaker(cfg.TokenSymmetricKey)
+	tokenManager, err := token.NewPasetoManager(cfg.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hashManager, err := hash.NewHash(cfg.HashSalt)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +79,7 @@ func main() {
 	cache := cache.New(d)
 
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenMaker, cache)
+	service := services.NewService(repo, tokenManager, hashManager, cache)
 	handlers := rest.NewHandler(service, log)
 
 	srv := server.NewServer(&http.Server{
@@ -118,6 +124,7 @@ func initConfig() (*config.Config, error) {
 	}
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
+	cfg.HashSalt = os.Getenv("HASH_SALT")
 
 	return cfg, nil
 }

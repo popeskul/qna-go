@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestHandlers_CreateTests(t *testing.T) {
@@ -29,9 +28,8 @@ func TestHandlers_CreateTests(t *testing.T) {
 		t.Fatalf("error finding user: %v", err)
 	}
 
-	duration := time.Duration(1) * time.Second
-
-	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	//token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	token, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
 		t.Fatalf("error generating token: %v", err)
 	}
@@ -96,14 +94,19 @@ func TestHandlers_GetTestByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error finding user: %v", err)
 	}
+	test.AuthorID = userID
 
-	duration := time.Duration(1) * time.Second
-	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	//duration := time.Duration(1) * time.Second
+	//token, err := mockServices.Manager.CreateToken(userID, duration)
+	token, err := mockServices.Auth.SignIn(ctx, user)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
 	if err != nil {
 		t.Fatalf("error generating token: %v", err)
 	}
 
-	if err = mockRepo.CreateTest(ctx, userID, test); err != nil {
+	if err = mockRepo.CreateTest(ctx, user.ID, test); err != nil {
 		t.Fatalf("error creating test: %v", err)
 	}
 
@@ -170,6 +173,8 @@ func TestHandlers_GetTestByID(t *testing.T) {
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				trueStatus := w.Code == tt.want.status
 
+				t.Log("->", w.Body.String())
+
 				if w.Code == http.StatusOK {
 					var test domain.Test
 					if err = json.Unmarshal(w.Body.Bytes(), &test); err != nil {
@@ -185,7 +190,7 @@ func TestHandlers_GetTestByID(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		helperDeleteUserByID(t, userID)
+		helperDeleteUserByID(t, user.ID)
 		helperDeleteTestByID(t, foundTest.ID)
 	})
 }
@@ -202,9 +207,9 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error finding user: %v", err)
 	}
+	user.ID = userID
 
-	duration := time.Duration(1) * time.Minute
-	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	token, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
 		t.Fatalf("error generating token: %v", err)
 	}
@@ -313,6 +318,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 			r.GET("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
+				t.Log(w.Body.String())
 				if w.Code != tt.want.status {
 					t.Fatalf("error getting tests: %v", w.Code)
 				}
@@ -358,8 +364,12 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		t.Fatalf("error finding user id: %v", err)
 	}
 
-	duration := time.Duration(1) * time.Second
-	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	//duration := time.Duration(1) * time.Second
+	//token, err := mockServices.Manager.CreateToken(userID, duration)
+	token, err := mockServices.Auth.SignIn(ctx, user)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
 	if err != nil {
 		t.Fatalf("error generating token: %v", err)
 	}
@@ -454,8 +464,12 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		t.Fatalf("error finding user id: %v", err)
 	}
 
-	duration := time.Duration(1) * time.Second
-	token, err := mockServices.TokenMaker.CreateToken(userID, duration)
+	//duration := time.Duration(1) * time.Second
+	//token, err := mockServices.Manager.CreateToken(userID, duration)
+	token, err := mockServices.Auth.SignIn(ctx, user)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
 	if err != nil {
 		t.Fatalf("error generating token: %v", err)
 	}
