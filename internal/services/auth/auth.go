@@ -1,4 +1,4 @@
-// Package user is a service with all business logic.
+// Package auth is a service with all business logic.
 package auth
 
 import (
