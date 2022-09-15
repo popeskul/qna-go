@@ -20,6 +20,9 @@ type Config struct {
 		TTL string `mapstructure:"ttl"`
 	}
 	HashSalt          string `mapstructure:"hash_salt"`
+	Session           struct {
+		Secret string `mapstructure:"secret"`
+	} `mapstructure:"session"`
 }
 
 // Postgres represents postgres config.
@@ -52,6 +55,10 @@ func New(folder, filename string) (*Config, error) {
 	}
 
 	if err := envconfig.Process("cache", cfg); err != nil {
+		return nil, err
+	}
+
+	if err := envconfig.Process("session", cfg); err != nil {
 		return nil, err
 	}
 

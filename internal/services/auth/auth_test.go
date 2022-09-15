@@ -12,6 +12,7 @@ import (
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
+	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/token"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
@@ -54,7 +55,8 @@ func TestMain(m *testing.M) {
 	}
 
 	mockRepo = repository.NewRepository(mockDB)
-	mockService = NewServiceAuth(mockRepo, pasetoMaker, hashManager)
+	sessionManager := sessions.NewRepoSessions(db)
+	mockService = NewServiceAuth(mockRepo, pasetoMaker, hashManager, sessionManager)
 
 	os.Exit(m.Run())
 }

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	CookieName      = "session_token"
+	accessTokenName = "access-token"
 )
 
 // errorResponse is the error response

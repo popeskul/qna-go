@@ -3,6 +3,8 @@
 package rest
 
 import (
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/docs"
 	"github.com/popeskul/qna-go/internal/logger"
@@ -15,13 +17,15 @@ import (
 // Handlers defines the handlers with all the necessary dependencies.
 type Handlers struct {
 	service *services.Service
+	store   cookie.Store
 	logger  *logger.Logger
 }
 
 // NewHandler creates a new Handlers with the necessary dependencies.
-func NewHandler(service *services.Service, logger *logger.Logger) *Handlers {
+func NewHandler(service *services.Service, store cookie.Store, logger *logger.Logger) *Handlers {
 	return &Handlers{
 		service: service,
+		store:   store,
 		logger:  logger,
 	}
 }
@@ -29,6 +33,7 @@ func NewHandler(service *services.Service, logger *logger.Logger) *Handlers {
 // Init initializes the rest transport handlers and returns a gin engine.
 func (h *Handlers) Init() *gin.Engine {
 	router := gin.Default()
+	router.Use(sessions.Sessions("session", h.store))
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Host = "localhost:8080"
@@ -38,7 +43,7 @@ func (h *Handlers) Init() *gin.Engine {
 
 	apiV1 := router.Group("/api/v1")
 	{
-		handlersV1 := v1.NewHandler(h.service, h.logger)
+		handlersV1 := v1.NewHandler(h.service, h.store, h.logger)
 		handlersV1.Init(apiV1)
 	}
 

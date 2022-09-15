@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
@@ -28,10 +29,9 @@ func TestHandlers_CreateTests(t *testing.T) {
 		t.Fatalf("error finding user: %v", err)
 	}
 
-	//token, err := mockServices.TokenMaker.CreateToken(userID, duration)
-	token, err := mockServices.Auth.SignIn(ctx, user)
+	accessToken, refreshToken, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 
 	validJSON, _ := json.Marshal(test)
@@ -58,10 +58,11 @@ func TestHandlers_CreateTests(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/tests", bytes.NewReader(tt.test))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+token)
 
 			r := gin.Default()
-			r.POST("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.CreateTest)
+			r.Use(sessions.Sessions("session", mockHandlers.store))
+
+			r.POST("/api/v1/tests", setSessionMiddleware(t, accessToken), mockHandlers.authMiddleware, mockHandlers.CreateTest)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Cleanup(func() {
@@ -78,6 +79,7 @@ func TestHandlers_CreateTests(t *testing.T) {
 
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
+		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
 }
 
@@ -94,16 +96,15 @@ func TestHandlers_GetTestByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error finding user: %v", err)
 	}
+	user.ID = userID
 	test.AuthorID = userID
 
-	//duration := time.Duration(1) * time.Second
-	//token, err := mockServices.Manager.CreateToken(userID, duration)
-	token, err := mockServices.Auth.SignIn(ctx, user)
+	accessToken, refreshToken, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 
 	if err = mockRepo.CreateTest(ctx, user.ID, test); err != nil {
@@ -126,10 +127,10 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Success: Get test",
+			name: "Success: GetRefreshToken test",
 			args: args{
 				id:    foundTest.ID,
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				status: http.StatusOK,
@@ -140,10 +141,10 @@ func TestHandlers_GetTestByID(t *testing.T) {
 			},
 		},
 		{
-			name: "Error: with invalid token",
+			name: "Error: with invalid accessToken",
 			args: args{
 				id:    foundTest.ID,
-				token: "bad token",
+				token: "bad accessToken",
 			},
 			want: want{
 				status: http.StatusUnauthorized,
@@ -153,7 +154,7 @@ func TestHandlers_GetTestByID(t *testing.T) {
 			name: "No test found",
 			args: args{
 				id:    0,
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				status: http.StatusNotFound,
@@ -165,15 +166,13 @@ func TestHandlers_GetTestByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests/"+strconv.Itoa(tt.args.id), nil)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			r := gin.Default()
-			r.GET("/api/v1/tests/:id", mockHandlers.authMiddleware, mockHandlers.GetTestByID)
+			r.Use(sessions.Sessions("session", mockHandlers.store))
+			r.GET("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.GetTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				trueStatus := w.Code == tt.want.status
-
-				t.Log("->", w.Body.String())
 
 				if w.Code == http.StatusOK {
 					var test domain.Test
@@ -192,6 +191,7 @@ func TestHandlers_GetTestByID(t *testing.T) {
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, user.ID)
 		helperDeleteTestByID(t, foundTest.ID)
+		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
 }
 
@@ -209,9 +209,9 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 	}
 	user.ID = userID
 
-	token, err := mockServices.Auth.SignIn(ctx, user)
+	accessToken, refreshToken, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 
 	type args struct {
@@ -239,7 +239,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 					PageID:   1,
 					PageSize: 10,
 				},
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				createdByQuantity: 10,
@@ -255,7 +255,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 					PageID:   1,
 					PageSize: 10,
 				},
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				createdByQuantity: 10,
@@ -263,7 +263,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 			},
 		},
 		{
-			name: "Success: Get 3 page with 2 tests, in db there are 22 tests",
+			name: "Success: GetRefreshToken 3 page with 2 tests, in db there are 22 tests",
 			args: args{
 				repo:             mockRepo,
 				createByQuantity: 22,
@@ -271,7 +271,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 					PageID:   3,
 					PageSize: 10,
 				},
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				createdByQuantity: 2,
@@ -287,7 +287,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 					PageID:   0,
 					PageSize: -10,
 				},
-				token: token,
+				token: accessToken,
 			},
 			want: want{
 				createdByQuantity: 0,
@@ -307,7 +307,6 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/tests", nil)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			q := req.URL.Query()
 			q.Add("page_id", strconv.Itoa(tt.args.params.PageID))
@@ -315,7 +314,8 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 			req.URL.RawQuery = q.Encode()
 
 			r := gin.Default()
-			r.GET("/api/v1/tests", mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
+			r.Use(sessions.Sessions("session", mockHandlers.store))
+			r.GET("/api/v1/tests", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.GetAllTestsByUserID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				t.Log(w.Body.String())
@@ -348,6 +348,7 @@ func TestHandlers_GetAllTestsByCurrentUser(t *testing.T) {
 
 	t.Cleanup(func() {
 		helperDeleteUserByID(t, userID)
+		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
 }
 
@@ -364,14 +365,12 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		t.Fatalf("error finding user id: %v", err)
 	}
 
-	//duration := time.Duration(1) * time.Second
-	//token, err := mockServices.Manager.CreateToken(userID, duration)
-	token, err := mockServices.Auth.SignIn(ctx, user)
+	accessToken, refreshToken, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 
 	newTitle := util.RandomString(10)
@@ -398,7 +397,7 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		{
 			name: "Success: Update test",
 			args: args{
-				token: token,
+				token: accessToken,
 				id:    testID,
 				input: validJSON,
 			},
@@ -410,7 +409,7 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		{
 			name: "Error: with invalid json",
 			args: args{
-				token: token,
+				token: accessToken,
 				input: badJSON,
 			},
 			want: want{
@@ -418,7 +417,7 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 			},
 		},
 		{
-			name: "Error: invalid token",
+			name: "Error: invalid accessToken",
 			args: args{
 				id:    testID,
 				input: validJSON,
@@ -433,10 +432,10 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPut, "/api/v1/tests/"+strconv.Itoa(tt.args.id), bytes.NewReader(tt.args.input))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			r := gin.Default()
-			r.PUT("/api/v1/tests/:id", mockHandlers.authMiddleware, mockHandlers.UpdateTestByID)
+			r.Use(sessions.Sessions("session", mockHandlers.store))
+			r.PUT("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.UpdateTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.want.status
@@ -448,6 +447,7 @@ func TestHandlers_UpdateTestByID(t *testing.T) {
 		helperDeleteTestByID(t, testIDZero)
 		helperDeleteTestByID(t, testID)
 		helperDeleteUserByID(t, userID)
+		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
 }
 
@@ -464,14 +464,12 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		t.Fatalf("error finding user id: %v", err)
 	}
 
-	//duration := time.Duration(1) * time.Second
-	//token, err := mockServices.Manager.CreateToken(userID, duration)
-	token, err := mockServices.Auth.SignIn(ctx, user)
+	accessToken, refreshToken, err := mockServices.Auth.SignIn(ctx, user)
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 	if err != nil {
-		t.Fatalf("error generating token: %v", err)
+		t.Fatalf("error generating accessToken: %v", err)
 	}
 
 	testID1 := helperCreateTest(t, userID, randomTest())
@@ -492,7 +490,7 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		{
 			name: "Success: Delete test",
 			args: args{
-				token: token,
+				token: accessToken,
 				id:    testID2,
 			},
 			want: want{
@@ -502,7 +500,7 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		{
 			name: "Fail: Delete test that does not exist",
 			args: args{
-				token: token,
+				token: accessToken,
 				id:    2134234234,
 			},
 			want: want{
@@ -510,7 +508,7 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 			},
 		},
 		{
-			name: "Error: invalid token",
+			name: "Error: invalid accessToken",
 			args: args{},
 			want: want{
 				status: http.StatusUnauthorized,
@@ -524,7 +522,8 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 			req.Header.Set("Authorization", "Bearer "+tt.args.token)
 
 			r := gin.Default()
-			r.DELETE("/api/v1/tests/:id", mockHandlers.authMiddleware, mockHandlers.DeleteTestByID)
+			r.Use(sessions.Sessions("session", mockHandlers.store))
+			r.DELETE("/api/v1/tests/:id", setSessionMiddleware(t, tt.args.token), mockHandlers.authMiddleware, mockHandlers.DeleteTestByID)
 
 			testHTTPResponse(t, r, req, func(w *httptest.ResponseRecorder) bool {
 				return w.Code == tt.want.status
@@ -536,5 +535,16 @@ func TestHandlers_DeleteTestByID(t *testing.T) {
 		helperDeleteUserByID(t, userID)
 		helperDeleteTestByID(t, testID1)
 		helperDeleteTestByID(t, testID2)
+		helperDeleteRefreshTokenByToken(t, refreshToken)
 	})
+}
+
+func setSessionMiddleware(t *testing.T, token string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set(accessTokenName, token)
+		if err := session.Save(); err != nil {
+			t.Fatalf("error saving session: %v", err)
+		}
+	}
 }
