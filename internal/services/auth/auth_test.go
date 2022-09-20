@@ -14,6 +14,7 @@ import (
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/token"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"os"
@@ -54,9 +55,14 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	auditLogger, err := grpcClient.NewClient(cfg.AuditLogger.Server.Host, cfg.AuditLogger.Server.Port)
+	if err != nil {
+		log.Fatalf("failed to initialize grpc client: %s\n", err.Error())
+	}
+
 	mockRepo = repository.NewRepository(mockDB)
 	sessionManager := sessions.NewRepoSessions(db)
-	mockService = NewServiceAuth(mockRepo, pasetoMaker, hashManager, sessionManager)
+	mockService = NewServiceAuth(mockRepo, pasetoMaker, hashManager, sessionManager, auditLogger)
 
 	os.Exit(m.Run())
 }
@@ -103,6 +109,7 @@ func TestServiceAuth_CreateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := mockService.CreateUser(ctx, tt.args.input)
 			if err != nil {
+				t.Log("Error: ", err, tt.err)
 				if !strings.Contains(tt.err.Error(), err.Error()) {
 					t.Errorf("ServiceAuth.CreateUser() error = %v, wantErr %v", err, tt.err)
 				}

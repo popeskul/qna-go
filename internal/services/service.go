@@ -4,7 +4,6 @@ package services
 import (
 	"context"
 
-	"github.com/popeskul/cache"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
@@ -12,6 +11,9 @@ import (
 	"github.com/popeskul/qna-go/internal/services/auth"
 	"github.com/popeskul/qna-go/internal/services/tests"
 	"github.com/popeskul/qna-go/internal/token"
+
+	"github.com/popeskul/cache"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 )
 
 // Auth interface is implemented by auth service.
@@ -44,8 +46,9 @@ type Service struct {
 	Auth
 	Tests
 	Sessions
-	TokenMaker token.Manager
-	Cache      *cache.Cache
+	TokenMaker  token.Manager
+	Cache       *cache.Cache
+	AuditLogger *grpcClient.Client
 }
 
 // NewService creates a new service with all services.
@@ -54,9 +57,11 @@ func NewService(
 	tokenManager token.Manager,
 	hashManager *hash.Manager,
 	cache *cache.Cache,
-	sessionManager *sessions.RepositorySessions) *Service {
+	sessionManager *sessions.RepositorySessions,
+	auditLogger *grpcClient.Client,
+) *Service {
 	return &Service{
-		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager, sessionManager),
-		Tests: tests.NewServiceTests(repo, cache),
+		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager, sessionManager, auditLogger),
+		Tests: tests.NewServiceTests(repo, cache, auditLogger),
 	}
 }
