@@ -13,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/cache"
+	queueClient "github.com/popeskul/qna-go/internal/queue"
 	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 
 	"github.com/popeskul/qna-go/internal/config"
@@ -93,8 +94,13 @@ func main() {
 		log.Fatalf("failed to initialize grpc client: %s\n", err.Error())
 	}
 
+	auditLoggerQueue, err := queueClient.New(cfg)
+	if err != nil {
+		log.Fatalf("failed to initialize queue client: %s\n", err.Error())
+	}
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenManager, hashManager, cache, sessionManager, auditLogger)
+	service := services.NewService(repo, tokenManager, hashManager, cache, sessionManager, auditLogger, auditLoggerQueue)
 	handlers := rest.NewHandler(service, store, log)
 
 	srv := server.NewServer(&http.Server{
@@ -141,6 +147,7 @@ func initConfig() (*config.Config, error) {
 	cfg.TokenSymmetricKey = os.Getenv("TOKEN_SYMMETRIC_KEY")
 	cfg.HashSalt = os.Getenv("HASH_SALT")
 	cfg.Session.Secret = os.Getenv("SESSION_SECRET")
+	cfg.Queue.Password = os.Getenv("QUEUE_PASSWORD")
 
 	return cfg, nil
 }

@@ -4,6 +4,7 @@ package tests
 import (
 	"context"
 	"github.com/popeskul/qna-go/internal/domain"
+	queueClient "github.com/popeskul/qna-go/internal/queue"
 	"github.com/popeskul/qna-go/internal/repository"
 	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 
@@ -15,14 +16,16 @@ type ServiceTests struct {
 	repo        repository.Tests
 	cache       *cache.Cache
 	auditLogger *grpcClient.Client
+	queueLogger *queueClient.Client
 }
 
 // NewServiceTests create service with all fields.
-func NewServiceTests(repo repository.Tests, cache *cache.Cache, auditLogger *grpcClient.Client) *ServiceTests {
+func NewServiceTests(repo repository.Tests, cache *cache.Cache, auditLogger *grpcClient.Client, queueLogger *queueClient.Client) *ServiceTests {
 	return &ServiceTests{
 		repo:        repo,
 		cache:       cache,
 		auditLogger: auditLogger,
+		queueLogger: queueLogger,
 	}
 }
 
