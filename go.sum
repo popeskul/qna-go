@@ -1003,8 +1003,6 @@ github.com/pkg/sftp v1.10.1/go.mod h1:lYOWFsE0bwd1+KfKJaKeuokY15vzFx25BLbzYYoAxZ
 github.com/pkg/sftp v1.13.1/go.mod h1:3HaPG6Dq1ILlpPZRO0HVMrsydcdLt6HRDccSgb87qRg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/popeskul/audit-logger v0.0.0-20220919202742-1964ece07979 h1:TsklAxQBdA8OR4fRvkjH+15pnz7sWNa1wnFwra77KOw=
-github.com/popeskul/audit-logger v0.0.0-20220919202742-1964ece07979/go.mod h1:RokcLTdeTOAsTT8k32zKuoWnhzrAdJV0RV9oaVibvRo=
 github.com/popeskul/audit-logger v0.0.0-20220920121121-217a7e28f422 h1:7d7/n4SkrbH8PgF2IyoTURrBHJ9+oYnp8oIAlWkN7Lo=
 github.com/popeskul/audit-logger v0.0.0-20220920121121-217a7e28f422/go.mod h1:RokcLTdeTOAsTT8k32zKuoWnhzrAdJV0RV9oaVibvRo=
 github.com/popeskul/cache v0.0.0-20220830065534-c6634fe670c8 h1:bKpN8Gf6GSHCXuk/nIYV2ukxuTeVVtkfHX3roudPTM8=
@@ -1119,6 +1117,8 @@ github.com/spf13/viper v1.13.0 h1:BWSJ/M+f+3nmdz9bxB+bWX28kkALN2ok11D0rSo8EJU=
 github.com/spf13/viper v1.13.0/go.mod h1:Icm2xNL3/8uyh/wFuB1jI7TiTNKp8632Nwegu+zgdYw=
 github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980/go.mod h1:AO3tvPzVZ/ayst6UlUKUv6rcPQInYe3IknH3jYhAKu8=
 github.com/stoewer/go-strcase v1.2.0/go.mod h1:IBiWB2sKIp3wVVQ3Y035++gc+knqhUQag1KpM8ahLw8=
+github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
+github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/stretchr/objx v0.0.0-20180129172003-8a3f7159479f/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

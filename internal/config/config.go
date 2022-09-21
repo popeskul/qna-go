@@ -24,6 +24,16 @@ type Config struct {
 		Secret string `mapstructure:"secret"`
 	} `mapstructure:"session"`
 	AuditLogger AuditLogger `mapstructure:"audit_logger"`
+	Queue       Queue       `mapstructure:"queue"`
+}
+
+type Queue struct {
+	ServerPort int    `mapstructure:"server_port"`
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	User       string `mapstructure:"user"`
+	Password   string `mapstructure:"password"`
+	QueueName  string `mapstructure:"queue_name"`
 }
 
 type AuditLogger struct {
@@ -75,6 +85,10 @@ func New(folder, filename string) (*Config, error) {
 	}
 
 	if err := envconfig.Process("audit_logger", cfg); err != nil {
+		return nil, err
+	}
+
+	if err := envconfig.Process("queue", cfg); err != nil {
 		return nil, err
 	}
 

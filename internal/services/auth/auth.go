@@ -9,6 +9,7 @@ import (
 	audit "github.com/popeskul/audit-logger/pkg/domain"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
+	queueClient "github.com/popeskul/qna-go/internal/queue"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/token"
@@ -29,6 +30,7 @@ type ServiceAuth struct {
 	hashManager    *hash.Manager
 	sessionManager *sessions.RepositorySessions
 	AuditLogger    *grpcClient.Client
+	queueLogger    *queueClient.Client
 }
 
 // NewServiceAuth create service with all fields.
@@ -38,6 +40,7 @@ func NewServiceAuth(
 	hashManager *hash.Manager,
 	sessionManager *sessions.RepositorySessions,
 	auditLogger *grpcClient.Client,
+	queueClient *queueClient.Client,
 ) *ServiceAuth {
 	return &ServiceAuth{
 		repo:           repo,
@@ -45,6 +48,7 @@ func NewServiceAuth(
 		hashManager:    hashManager,
 		sessionManager: sessionManager,
 		AuditLogger:    auditLogger,
+		queueLogger:    queueClient,
 	}
 }
 
@@ -66,6 +70,14 @@ func (s *ServiceAuth) CreateUser(ctx context.Context, user domain.User) error {
 
 	user, err = s.GetUserByEmail(ctx, user.Email)
 	if err != nil {
+		return err
+	}
+
+	if err = s.queueLogger.Produce(&audit.LogItem{
+		Entity:   audit.EntityUser,
+		Action:   audit.ActionCreate,
+		EntityID: int64(user.ID),
+	}); err != nil {
 		return err
 	}
 
@@ -92,6 +104,14 @@ func (s *ServiceAuth) SignIn(ctx context.Context, user domain.User) (string, str
 
 	accessToken, refreshToken, err := s.generateToken(ctx, userByEmail.ID)
 	if err != nil {
+		return "", "", err
+	}
+
+	if err = s.queueLogger.Produce(&audit.LogItem{
+		Entity:   audit.EntityUser,
+		Action:   audit.ActionLogin,
+		EntityID: int64(userByEmail.ID),
+	}); err != nil {
 		return "", "", err
 	}
 

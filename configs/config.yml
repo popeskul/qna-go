@@ -20,3 +20,10 @@ audit_logger:
   server:
     host: "127.0.0.1"
     port: 9000
+
+queue:
+  server_port: 82
+  host: "localhost"
+  port: 5672
+  user: "guest"
+  queue_name: "logs"

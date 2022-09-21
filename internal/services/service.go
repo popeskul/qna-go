@@ -6,6 +6,7 @@ import (
 
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
+	queueClient "github.com/popeskul/qna-go/internal/queue"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/services/auth"
@@ -59,9 +60,10 @@ func NewService(
 	cache *cache.Cache,
 	sessionManager *sessions.RepositorySessions,
 	auditLogger *grpcClient.Client,
+	queueClient *queueClient.Client,
 ) *Service {
 	return &Service{
-		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager, sessionManager, auditLogger),
-		Tests: tests.NewServiceTests(repo, cache, auditLogger),
+		Auth:  auth.NewServiceAuth(repo, tokenManager, hashManager, sessionManager, auditLogger, queueClient),
+		Tests: tests.NewServiceTests(repo, cache, auditLogger, queueClient),
 	}
 }

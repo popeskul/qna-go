@@ -13,9 +13,11 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/o1egl/paseto v1.0.0
 	github.com/pkg/errors v0.9.1
+	github.com/popeskul/audit-logger v0.0.0-20220920121121-217a7e28f422
 	github.com/popeskul/cache v0.0.0-20220830065534-c6634fe670c8
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.13.0
+	github.com/streadway/amqp v1.0.0
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.2
 	github.com/swaggo/swag v1.8.5
@@ -58,7 +60,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
-	github.com/popeskul/audit-logger v0.0.0-20220920121121-217a7e28f422 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
