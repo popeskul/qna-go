@@ -13,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/joho/godotenv"
 	"github.com/popeskul/cache"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 
 	"github.com/popeskul/qna-go/internal/config"
 	"github.com/popeskul/qna-go/internal/db"
@@ -87,8 +88,13 @@ func main() {
 	}
 	cache := cache.New(d)
 
+	auditLogger, err := grpcClient.NewClient(cfg.AuditLogger.Server.Host, cfg.AuditLogger.Server.Port)
+	if err != nil {
+		log.Fatalf("failed to initialize grpc client: %s\n", err.Error())
+	}
+
 	repo := repository.NewRepository(db)
-	service := services.NewService(repo, tokenManager, hashManager, cache, sessionManager)
+	service := services.NewService(repo, tokenManager, hashManager, cache, sessionManager, auditLogger)
 	handlers := rest.NewHandler(service, store, log)
 
 	srv := server.NewServer(&http.Server{

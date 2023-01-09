@@ -5,21 +5,24 @@ import (
 	"context"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/repository"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 
 	"github.com/popeskul/cache"
 )
 
 // ServiceTests compose all functions for tests.
 type ServiceTests struct {
-	repo  repository.Tests
-	cache *cache.Cache
+	repo        repository.Tests
+	cache       *cache.Cache
+	auditLogger *grpcClient.Client
 }
 
 // NewServiceTests create service with all fields.
-func NewServiceTests(repo repository.Tests, cache *cache.Cache) *ServiceTests {
+func NewServiceTests(repo repository.Tests, cache *cache.Cache, auditLogger *grpcClient.Client) *ServiceTests {
 	return &ServiceTests{
-		repo:  repo,
-		cache: cache,
+		repo:        repo,
+		cache:       cache,
+		auditLogger: auditLogger,
 	}
 }
 

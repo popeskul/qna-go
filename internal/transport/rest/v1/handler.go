@@ -19,7 +19,7 @@ type Handlers struct {
 func NewHandler(service *services.Service, store cookie.Store, log *logger.Logger) *Handlers {
 	return &Handlers{
 		service: service,
-		store: store,
+		store:   store,
 		logger:  log,
 	}
 }

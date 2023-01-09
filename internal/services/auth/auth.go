@@ -5,11 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	audit "github.com/popeskul/audit-logger/pkg/domain"
 	"github.com/popeskul/qna-go/internal/domain"
 	"github.com/popeskul/qna-go/internal/hash"
 	"github.com/popeskul/qna-go/internal/repository"
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/token"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 	"math/rand"
 	"os"
 	"time"
@@ -25,15 +28,23 @@ type ServiceAuth struct {
 	tokenManger    token.Manager
 	hashManager    *hash.Manager
 	sessionManager *sessions.RepositorySessions
+	AuditLogger    *grpcClient.Client
 }
 
 // NewServiceAuth create service with all fields.
-func NewServiceAuth(repo repository.Auth, tokenManger token.Manager, hashManager *hash.Manager, sessionManager *sessions.RepositorySessions) *ServiceAuth {
+func NewServiceAuth(
+	repo repository.Auth,
+	tokenManger token.Manager,
+	hashManager *hash.Manager,
+	sessionManager *sessions.RepositorySessions,
+	auditLogger *grpcClient.Client,
+) *ServiceAuth {
 	return &ServiceAuth{
 		repo:           repo,
 		tokenManger:    tokenManger,
 		hashManager:    hashManager,
 		sessionManager: sessionManager,
+		AuditLogger:    auditLogger,
 	}
 }
 
@@ -49,7 +60,24 @@ func (s *ServiceAuth) CreateUser(ctx context.Context, user domain.User) error {
 	}
 	user.Password = hashedPassword
 
-	return s.repo.CreateUser(ctx, user)
+	if err = s.repo.CreateUser(ctx, user); err != nil {
+		return err
+	}
+
+	user, err = s.GetUserByEmail(ctx, user.Email)
+	if err != nil {
+		return err
+	}
+
+	if _, err = s.AuditLogger.SendLogRequest(ctx, (&audit.LogItem{
+		Entity:   audit.EntityUser,
+		Action:   audit.ActionCreate,
+		EntityID: int64(user.ID),
+	})); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *ServiceAuth) SignIn(ctx context.Context, user domain.User) (string, string, error) {
@@ -62,7 +90,20 @@ func (s *ServiceAuth) SignIn(ctx context.Context, user domain.User) (string, str
 		return "", "", ErrSignIn
 	}
 
-	return s.generateToken(ctx, userByEmail.ID)
+	accessToken, refreshToken, err := s.generateToken(ctx, userByEmail.ID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if _, err = s.AuditLogger.SendLogRequest(ctx, &audit.LogItem{
+		Entity:   audit.EntityUser,
+		Action:   audit.ActionLogin,
+		EntityID: int64(userByEmail.ID),
+	}); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 // GetUser get user from db and return user and error if any.

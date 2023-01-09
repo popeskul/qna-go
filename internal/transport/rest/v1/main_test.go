@@ -17,6 +17,7 @@ import (
 	"github.com/popeskul/qna-go/internal/repository/sessions"
 	"github.com/popeskul/qna-go/internal/services"
 	"github.com/popeskul/qna-go/internal/token"
+	grpcClient "github.com/popeskul/qna-go/internal/transport/grpc"
 	"github.com/popeskul/qna-go/internal/util"
 	"log"
 	"net/http"
@@ -72,10 +73,15 @@ func TestMain(m *testing.M) {
 	}
 	cache := cache.New(d)
 
+	auditLogger, err := grpcClient.NewClient(cfg.AuditLogger.Server.Host, cfg.AuditLogger.Server.Port)
+	if err != nil {
+		log.Fatalf("failed to initialize grpc client: %s\n", err.Error())
+	}
+
 	sessionManager := sessions.NewRepoSessions(db)
 
 	mockRepo = repository.NewRepository(db)
-	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, cache, sessionManager)
+	mockServices = services.NewService(mockRepo, pasetoMaker, hashManager, cache, sessionManager, auditLogger)
 	mockHandlers = NewHandler(mockServices, store, logger.GetLogger())
 
 	gin.SetMode(gin.TestMode)
