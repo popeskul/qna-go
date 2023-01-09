@@ -1,3 +1,5 @@
+.PHONY: postgres adminer migrate-install migrate-up migrate-down
+
 PROJECT_DIR = $(shell pwd)
 PROJECT_BIN = $(PROJECT_DIR)/bin
 $(shell [ -f bin ] || mkdir -p $(PROJECT_BIN))
@@ -11,6 +13,12 @@ migrate-up:
 
 migrate-down:
 	migrate -path ./schema -database 'postgres://$(db_user):$(db_password)@$(db_host):$(db_port)/$(db_name)?sslmode=disable' down -all
+
+postgres:
+	docker run --rm -ti --network host -e POSTGRES_PASSWORD=12345 -e POSTGRES_USER=postgres -e POSTGRES_DB=postgres postgres
+
+api:
+	docker run --rm -ti --network host qna-go
 
 # rules for compiling the golangci-lint
 GOLANGCI_LINT = $(PROJECT_BIN)/golangci-lint
